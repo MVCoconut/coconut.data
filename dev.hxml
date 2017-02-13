@@ -1,2 +1,2 @@
 lib.hxml
--scoped-hxml examples/todomvc/todomvc.hxml
+tests.hxml

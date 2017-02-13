@@ -1,7 +1,5 @@
 package ;
 
-import coconut.data.Selection;
-
 class RunTests {
 
   static function main() {

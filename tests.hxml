@@ -1,4 +1,4 @@
 -cp tests
 -lib travix
--lib coconut
+-lib coconut.data
 -main RunTests

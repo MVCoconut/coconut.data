@@ -1,4 +1,4 @@
 package coconut.data;
 
-@:autoBuild(coconut.macros.Models.build())
+@:autoBuild(coconut.data.macros.Models.build())
 interface Model {}
