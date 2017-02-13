@@ -1,7 +1,7 @@
 sudo: required
 dist: trusty
 
-language: generic
+language: node_js
 
 os:
   - linux
@@ -9,7 +9,7 @@ os:
 install:
   - sudo npm install haxeshim -g
   - sudo npm install switchx -g
-  - sudo npm install lix -g
+  - sudo npm install lix.pm -g
   - switchx install
   - lix download
   - haxelib install travix
