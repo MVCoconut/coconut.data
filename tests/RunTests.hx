@@ -1,5 +1,7 @@
 package ;
 
+using tink.CoreApi;
+
 class RunTests {
 
   static function main() {
@@ -18,5 +20,10 @@ class TodoItem implements coconut.data.Model {
 
   @:computed var firstLine:String = description.split('\n')[0];
   
-  @:loaded({ eagerly: true }) var similar:Iterable<TodoItem> = Server.loadSimilarTodos(this.description);
+  @:loaded var similar:Iterable<TodoItem> = Server.loadSimilarTodos(this.description);
+}
+
+class Server {
+  static public function loadSimilarTodos(description:String):Promise<Iterable<TodoItem>>
+    return ([]:Iterable<TodoItem>);
 }

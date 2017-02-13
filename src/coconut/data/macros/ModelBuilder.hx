@@ -28,6 +28,7 @@ private typedef Result = {
   var getter(default, null):Expr;
   @:optional var setter(default, null):Expr;
   @:optional var stateful(default, null):Bool;
+  @:optional var type(default, null):ComplexType;
   var init(default, null):Init;
 }
 
@@ -47,11 +48,11 @@ class ModelBuilder {
 
     fieldDirectives = [
       new Named(':constant'  , constantField),
-      new Named(':computed'  , computedField),
+      new Named(':computed'  , computedField.bind(_, false)),
+      new Named(':loaded'  , computedField.bind(_, true)), 
       new Named(':editable'  , observableField.bind(_, true)),
       new Named(':observable', observableField.bind(_, false)),
     ];
-
     
     if (!c.target.meta.has(':tink'))
       c.target.meta.add(':tink', [], c.target.pos);
@@ -107,18 +108,23 @@ class ModelBuilder {
                   meta: v.meta,
                 });
 
-                c.addMember(Member.getter(name, res.getter, t));
+                var finalType = switch res.type {
+                  case null: t;
+                  case v: v;
+                }
+
+                c.addMember(Member.getter(name, res.getter, finalType));
 
                 var setter = 
                   switch res.setter {
                     case null:
                       'never';
                     case v:
-                      c.addMember(Member.setter(name, v, t));
+                      c.addMember(Member.setter(name, v, finalType));
                       'set';
                   }
 
-                member.kind = FProp('get', setter, t, null);
+                member.kind = FProp('get', setter, finalType, null);
                 member.publish();
 
                 function addArg(?meta)
@@ -261,15 +267,29 @@ class ModelBuilder {
     }
   }
 
-  function computedField(ctx:FieldContext):Result
+  function computedField(ctx:FieldContext, async:Bool):Result {
+    
     return {
       getter: ctx.expr,
       init: Skip,
+      type: if (async) {
+        var ct = ctx.type;
+        macro : tink.state.Promised<$ct>;
+      } else null,
+    }
+  }
+
+  function mustNotHaveMetaArgs(ctx:FieldContext) 
+    switch ctx.meta.params {
+      case []:
+      case v: 
+        v[0].reject('@:${ctx.meta.name} must not have arguments');
     }
 
   function observableField(ctx:FieldContext, setter:Bool):Result {
     var name = ctx.name,
         state = '__coco_$name';
+
     return {
       getter: macro @:pos(ctx.pos) this.$state.value,
       setter: if (setter) macro @:pos(ctx.pos) this.$state.set(param) else null,
