@@ -1,0 +1,5 @@
+# @install: lix download https://github.com/kevinresol/tink_unittest/archive/f315d7c905e03a70f84ad2aef3d77691d60b781f.tar.gz as tink_unittest#0.0.0/f315d7c905e03a70f84ad2aef3d77691d60b781f
+-D tink_unittest=0.0.0
+-cp ${HAXESHIM_LIBCACHE}/tink_unittest/0.0.0/f315d7c905e03a70f84ad2aef3d77691d60b781f/src
+
+-lib tink_macro

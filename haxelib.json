@@ -1,9 +1,12 @@
 {
-  "name": "coconut",
+  "name": "coconut.data",
   "license": "MIT",
   "tags": [
-    "ui",
-    "js"
+    "data",
+    "state",
+    "cross",
+    "reactive",
+    "observable"
   ],
   "classPath": "src",
   "contributors": [
@@ -11,7 +14,7 @@
   ],
   "releasenote": "initial release",
   "version": "0.0.0",
-  "url": "https://github.com/back2dos/coconut/",
+  "url": "https://github.com/MVCoconut/coconut.data/",
   "dependencies": {
     "tink_state": "",
     "tink_lang": "",

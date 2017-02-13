@@ -1,22 +1,19 @@
 sudo: required
 dist: trusty
 
-language: haxe
+language: generic
 
 os:
   - linux
-  
-haxe:
-  - "3.2.1"
-  - development
-  
-matrix:
-  allow_failures:
-    - haxe: development
-    
+      
 install:
+  - sudo npm install haxeshim -g
+  - sudo npm install switchx -g
+  - sudo npm install lix -g
+  - switchx install
+  - lix download
   - haxelib install travix
-  - haxelib run travix install
 
 script:
   - haxelib run travix js
+  - haxelib run travix node
