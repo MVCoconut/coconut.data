@@ -267,23 +267,27 @@ class ModelBuilder {
     }
   }
 
-  function computedField(ctx:FieldContext):Result {
+  function computedField(ctx:FieldContext, async:Bool):Result {
     var state = stateOf(ctx.name),
-        t = ctx.type;
+        t = switch [async, ctx.type] {
+          case [true, v]:
+            macro : tink.state.Promised<$v>;
+          case [_, v]: v;
+        }
+
     c.addMember({
       name: state,
       pos: ctx.pos,
       access: [APrivate],
       kind: FVar(macro : tink.state.Observable<$t>)
     });
+
     c.getConstructor().init(state, ctx.pos, Value(macro tink.state.Observable.auto(function () return ${ctx.expr})));
+
     return {
       getter: macro this.$state.value,
       init: Skip,
-      type: if (async) {
-        var ct = ctx.type;
-        macro : tink.state.Promised<$ct>;
-      } else null,
+      type: t,
     }
   }
 
