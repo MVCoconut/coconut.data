@@ -7,9 +7,9 @@ os:
   - linux
       
 install:
-  - sudo npm install haxeshim -g
-  - sudo npm install switchx -g
-  - sudo npm install lix.pm -g
+  - npm install haxeshim -g
+  - npm install switchx -g
+  - npm install lix.pm -g
   - switchx install
   - lix download
   - haxelib install travix
