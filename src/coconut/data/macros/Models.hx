@@ -1,5 +1,10 @@
 package coconut.data.macros;
 
+#if macro
+import haxe.macro.Expr;
+using tink.MacroApi;
+#end
+
 class Models {
   #if macro 
   static public function build() 
