@@ -20,8 +20,8 @@ install:
   - haxelib run travix install
 
 script:
-  - haxelib run travix interp
-  - haxelib run travix neko
-  - haxelib run travix node
-  - haxelib run travix python
-  #- haxelib run travix java
+  # - haxelib run travix interp -lib tink_unittest
+  # - haxelib run travix neko -lib tink_unittest
+  # - haxelib run travix node -lib tink_unittest
+  - haxelib run travix python -lib tink_unittest
+  # - haxelib run travix java
