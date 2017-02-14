@@ -1,4 +1,3 @@
 -cp tests
 -lib tink_unittest
--lib coconut.data
 -main RunTests
