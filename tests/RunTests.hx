@@ -16,14 +16,49 @@ class RunTests {
     ]).handle(function(result) {
         exit(result.errors);
     });
-    // trace('it works');
-    // travix.Logger.exit(0); // make sure we exit properly, which is necessary on some targets, e.g. flash & (phantom)js
   }
   
 }
 
 class TodoModelTest {
   public function new() {}
+
+  @:describe("@:transition") 
+  public function testTransitions() {
+    var rates = new Rates();
+    
+
+    var ret = isTrue(true);
+
+    function checksum()
+      ret = ret && equals(100, rates.taxRate + rates.luxuryRate + rates.scienceRate);
+
+    checksum();
+
+    rates.setTaxRate(50);
+
+    ret = ret && equals(50, rates.taxRate);
+    ret = ret && equals(0, rates.luxuryRate);
+    
+    checksum();
+
+    for (i in 0...100) {
+      rates.setLuxuryRate(Std.random(200) - 50);
+      checksum();
+      rates.setTaxRate(Std.random(200) - 50);
+      checksum();
+    }
+    var sum = 0;
+
+    rates.setTaxRate(40).handle(function (o) sum += o.sure());
+    rates.setLuxuryRate(30).handle(function (o) sum += o.sure());
+    
+    ret = ret && equals(70, sum);
+
+    checksum();
+
+    return ret;
+  }
 
   @:describe("@:loaded")
   public function testLoaded() {
@@ -46,7 +81,7 @@ class TodoModelTest {
         cb(Failure(new Error('@:loaded is not lazy')));
         return;
       }
-      @:privateAccess item.__coco_similar.bind({ direct: true }, function (v) {
+      item.observables.similar.bind({ direct: true }, function (v) {
         var e = expected.shift();
         if (!called)
           cb(Failure(new Error('@:loaded did not start loading')));
@@ -77,4 +112,33 @@ class TodoItem implements coconut.data.Model {
 class Server {
   static public function loadSimilarTodos(description:String):Promise<Iterable<TodoItem>>
     return ([]:Iterable<TodoItem>);
+}
+
+class Rates implements coconut.data.Model {
+  
+  @:observable var taxRate:Int = 0;
+  @:observable var luxuryRate:Int = 0;
+  @:computed var scienceRate:Int = 100 - taxRate - luxuryRate;
+
+  @:transition(return taxRate) 
+  function setTaxRate(to:Int) {
+    
+    if (to < 0) to = 0;
+    else if (to > 100) to = 100;
+
+    return 
+      if (to < taxRate || to - taxRate < scienceRate) Future.sync(Noise).map(function (_) return @patch { taxRate: to });
+      else { taxRate: to, luxuryRate: 100 - to };
+  }
+
+  @:transition(return luxuryRate) 
+  function setLuxuryRate(to:Int) {
+    
+    if (to < 0) to = 0;
+    else if (to > 100) to = 100;
+
+    return 
+      if (to < luxuryRate || to - luxuryRate < scienceRate) { luxuryRate: to };
+      else { luxuryRate: to, taxRate: 100 - to };
+  }  
 }

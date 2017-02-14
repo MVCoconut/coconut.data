@@ -49,7 +49,7 @@ class ModelBuilder {
     fieldDirectives = [
       new Named(':constant'  , constantField),
       new Named(':computed'  , computedField.bind(_, false)),
-      new Named(':loaded'  , computedField.bind(_, true)), 
+      new Named(':loaded'    , computedField.bind(_, true)), 
       new Named(':editable'  , observableField.bind(_, true)),
       new Named(':observable', observableField.bind(_, false)),
     ];
@@ -61,10 +61,13 @@ class ModelBuilder {
       c.getConstructor().toHaxe().pos.error('Custom constructors not allowed in models');
 
     var argFields = [],
-        transitionFields = [];
+        transitionFields = [],
+        observableFields = [],
+        observableInit = [];
 
     var argType = TAnonymous(argFields),
-        transitionType = TAnonymous(transitionFields);
+        transitionType = TAnonymous(transitionFields),
+        observables = TAnonymous(observableFields);
 
     var cFunc = (macro function (?initial:$argType) {
     }).getFunction().sure();
@@ -181,7 +184,22 @@ class ModelBuilder {
                   case null:
                   case v:
                     constr.init(name, member.pos, Value(v), { bypass: true });
-                }                  
+                }  
+
+                observableFields.push({
+                  name: name,
+                  pos: member.pos,
+                  kind: FProp('default', 'never', macro : tink.state.Observable<$finalType>)
+                });                
+
+                observableInit.push({
+                  field: name,
+                  expr: 
+                    switch stateOf(name) {
+                      case obs if (c.hasMember(obs)): macro this.$obs;
+                      default: macro this.$name;
+                    }
+                });
             }
 
             switch member.extractMeta(':transition') {
@@ -213,11 +231,11 @@ class ModelBuilder {
                   ret = macro null;
 
                 function next(e:Expr) return switch e {
-                  case macro @applyChanges $v: macro @:pos(e.pos) ($v : $transitionType);
+                  case macro @patch $v: macro @:pos(e.pos) ($v : $transitionType);
                   default: e.map(next);
                 }
 
-                f.expr = macro @:pos(f.expr.pos) coconut.macros.Models.transition(
+                f.expr = macro @:pos(f.expr.pos) coconut.data.macros.Models.transition(
                   function ():tink.core.Promise<$transitionType> ${next(f.expr)}, $ret
                 );
 
@@ -235,7 +253,7 @@ class ModelBuilder {
 
     if (cFunc.args[0].opt)
       constr.addStatement(macro initial = {}, true);
-
+    constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
     var updates = [];
     
     for (f in transitionFields) {
@@ -245,7 +263,10 @@ class ModelBuilder {
 
     add(macro class {
       @:noCompletion function __cocoupdate(delta:$transitionType) $b{updates};
+      public var observables(default, never):$observables;
     });
+
+    c.target.meta.add(':final', [], c.target.pos);
   }
   static public function stateOf(name:String)
     return '__coco_$name';
