@@ -16,6 +16,7 @@ matrix:
     
 install:
   - haxelib install travix
+  - haxelib git tink_unittest https://github.com/kevinresol/tink_unittest
   - haxelib run travix install
 
 script:
