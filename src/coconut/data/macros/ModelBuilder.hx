@@ -171,13 +171,11 @@ class ModelBuilder {
                     case null:
                       throw "assert";
                     case e: 
-                      c.addMember({
-                        access: [APrivate],
-                        name: stateOf(name),
-                        pos: member.pos,
-                        kind: FVar(macro : tink.state.State<$t>),
+                      var state = stateOf(name);
+                      add(macro class {
+                        @:noCompletion private var $state:tink.state.State<$t>;
                       });
-                      constr.init(stateOf(name), e.pos, Value(e));
+                      constr.init(state, e.pos, Value(e));
                   }
                 }
                 else switch getValue() {
@@ -296,11 +294,8 @@ class ModelBuilder {
           case [_, v]: v;
         }
 
-    c.addMember({
-      name: state,
-      pos: ctx.pos,
-      access: [APrivate],
-      kind: FVar(macro : tink.state.Observable<$t>)
+    add(macro class {
+      @:noCompletion private var $state:tink.state.Observable<$t>;
     });
 
     c.getConstructor().init(state, ctx.pos, Value(macro tink.state.Observable.auto(function () return ${ctx.expr})));
