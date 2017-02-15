@@ -5,7 +5,7 @@ import tink.unit.Assert.*;
 
 import tink.state.Observable;
 import tink.state.Promised;
-import coconut.data.Selection;
+import coconut.data.*;
 
 using tink.CoreApi;
 
@@ -14,11 +14,96 @@ class RunTests {
   static function main() {
     run([
         new TodoModelTest(),
+        new SelectionTest(),
     ]).handle(function(result) {
         exit(result.errors);
     });
   }
   
+}
+
+class SelectionTest {
+  
+  static var options = [for (i in 0...10) new Named(Std.string(i), i)];
+  
+  public function new() {}
+
+  @:describe("single selection")
+  @:describe("  without unselect")
+  public function singleWithoutUnselect() {
+    
+    var ret = isTrue(true);
+
+    function assert(b:Bool, ?pos:haxe.PosInfos)
+      ret = ret && isTrue(b, pos);
+
+    var s = Selection.single(options);
+    assert(s.selected == None);
+    for (v in options) {
+      assert(s.toggle(v.value));
+      assert(Type.enumEq(Some(v.value), s.selected));
+      assert(s.toggle(v.value));
+      assert(Type.enumEq(Some(v.value), s.selected));
+    }
+    return ret;
+  }
+
+  @:describe("  with unselect")
+  public function singleWithUnselect() {
+    
+    var ret = isTrue(true);
+
+    function assert(b:Bool, ?pos:haxe.PosInfos)
+      ret = ret && isTrue(b, pos);
+
+    var s = Selection.single(options, { canUnselect: true });
+    assert(s.selected == None);
+    for (v in options) {
+      assert(s.toggle(v.value));
+      assert(Type.enumEq(Some(v.value), s.selected));
+      assert(!s.toggle(v.value));
+      assert(s.selected == None);
+      assert(s.toggle(v.value));
+    }
+    return ret;
+  }  
+
+  @:describe("  non-optional")
+  public function testNonOptional() {
+
+    var ret = isTrue(true);
+
+    function assert(b:Bool, ?pos:haxe.PosInfos)
+      ret = ret && isTrue(b, pos);
+    
+    var s = Selection.of(options[0]).or(options.slice(1));
+
+    for (v in options) {
+      assert(s.toggle(v.value));
+      assert(v.value == s.selected);
+      assert(s.toggle(v.value));
+    }
+
+    return ret;
+  }
+
+  @:describe("multiple selection")
+  public function testMultiple() {
+
+    var ret = isTrue(true);
+
+    function assert(b:Bool, ?pos:haxe.PosInfos)
+      ret = ret && isTrue(b, pos);
+
+    var s = Selection.multiple(options);
+    for (v in options) {
+      assert(s.toggle(v.value));
+      assert(!s.toggle(v.value));
+      assert(s.toggle(v.value));
+    }
+    assert(options.length == s.selected.length);
+    return ret;
+  }
 }
 
 class TodoModelTest {

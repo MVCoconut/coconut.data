@@ -27,7 +27,7 @@ class TodoItem implements Model {
   @:editable var description:String;
 
   @:computed var firstLine:String = description.split('\n')[0];
-  @:loaded var similar:Iterable<TodoItem> = Server.loadSimilarTodos(this.description);
+  @:loaded var similar:tink.pure.List<TodoItem> = Server.loadSimilarTodos(this.description);
 }
 ```
 
@@ -41,7 +41,7 @@ class TodoItem implements Model {
   public var completed(get, set):Bool;
   public var description(get, set):String;
   public var firstLine(get, never):String;
-  public var similar(get, never):tink.state.Promised<Iterable<TodoItem>>;
+  public var similar(get, never):tink.state.Promised<tink.pure.List<TodoItem>>;
 
   public function new(initial:{ description:String, ?created:Date }):Void { /* magic happens here */}
 
@@ -50,7 +50,7 @@ class TodoItem implements Model {
     var completed(default, never):tink.state.Observable<Bool>;
     var description(default, never):tink.state.Observable<String>;
     var firstLine(default, never):tink.state.Observable<String>;
-    var similar(default, never):tink.state.Observable<tink.state.Promised<Iterable<TodoItem>>>;
+    var similar(default, never):tink.state.Observable<tink.state.Promised<tink.pure.List<TodoItem>>>;
   };
 }
 ```
@@ -83,15 +83,15 @@ To properly modularize your application you will want to avoid depend your model
 class TodoItem implements Model {
   // ... rest as above
 
-  @:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<Iterable<TodoItem>>; };
-  @:promised var similar:Iterable<TodoItem> = server.loadSimilarTodos(this.description);
+  @:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<tink.pure.List<TodoItem>>; };
+  @:promised var similar:tink.pure.List<TodoItem> = server.loadSimilarTodos(this.description);
 }
 ```
 
 And of course you can still specify a default:
 
 ```haxe
-@:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<Iterable<TodoItem>>; } = @byDefault Server;`.
+@:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<tink.pure.List<TodoItem>>; } = @byDefault Server;`.
 ```
 
 This technique may also make sense for directly `@:computed` properties.
@@ -350,3 +350,4 @@ class User implements coconut.data.Model {
 ```
 
 The difference here is: you can log in 100 times with the same credentials, the result will be the same - unless they change in the meantime or your connection or the server goes down or the server engages some flood control after 3 attempts ... but for the sake of the argument let's just say the result will be the same. If for some reason the `profile` field had to be reloaded with the same credentials it is quite safe to assume the result would be the same. However when you buy an item in the store, things change. Sooner or later you're out of money or the store is out of stock.
+
