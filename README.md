@@ -59,7 +59,7 @@ All fields become public by default (you can use `private` to keep them private 
 
 ## `@:loaded` properties
 
-Notice how in the example above the `@:promised` property we declared actually has it's type promoted to `Promised<T>` from `tink_state` which is defined like so:
+Notice how in the example above the `@:loaded` property we declared actually has it's type promoted to `Promised<T>` from `tink_state` which is defined like so:
 
 ```haxe
 enum Promise<T> {
@@ -68,6 +68,8 @@ enum Promise<T> {
   Failed(e:Error);
 }
 ```
+
+Because the computation is asynchronous its current state can assume any of the three values.
 
 ### Cache control
 
@@ -197,6 +199,10 @@ function setTaxRate(to:Int) {
 
 Technically you can do things like `@:transition(return Date.now().getTime())` but it's needless to say that you should use this feature to yield information that is useful to the caller.
 
+### Synchronization
+
+... is also planned ...
+
 ## To cycle or not to cycle
 
 When you can, you should not build cycles in your data.
@@ -292,7 +298,7 @@ It is also easy to create cycles with transitions. Calling `driver.stop()` calls
 
 Note that there's also often a way to eliminate transitions. It's not always desirable though.
 
-Imagine this:
+Imagine we have an application in which we model the user and login like so:
 
 ```haxe
 typedef Credentials = {
@@ -313,7 +319,7 @@ class User implements coconut.data.Model {
 }
 ```
 
-Instead, we might do the following:
+Guests have `None` as their `profile` and logged in users have `Some(value)` of course. By calling `login` we can transition from one state to the other. That is one way to express it. Instead, we might do the following:
 
 ```haxe
 class User implements coconut.data.Model {
@@ -326,4 +332,17 @@ class User implements coconut.data.Model {
 }
 ```
 
-And just like that we've eliminated a transition. Whether or not it's smart to do in this case is a fair question.
+And just like that we've eliminated a transition. Whether or not it's smart to do in this particular case is a fair question. The lesson to be learnt from this example: asynchronous operations can be seen as transitions from one state to another, but in some cases the can be expressed as mere computations. Just for reference, here's an example of something that is definitely a transition:
+
+```haxe
+class User implements coconut.data.Model {
+  @:constant var store:{ function buy(item:Item):Promise<{ total:Int }> };
+  @:observable var balance:Int = 100;
+  public function buy(item:Item)
+    return 
+      if (item.price < balance) store.buy(item).next(function (o) return { balance: balance - o.total });
+      else {};
+}
+```
+
+The difference here is: you can log in 100 times with the same credentials, the result will be the same - unless they change in the meantime or your connection or the server goes down or the server engages some flood control after 3 attempts ... but for the sake of the argument let's just say the result will be the same. If for some reason the `profile` field had to be reloaded with the same credentials it is quite safe to assume the result would be the same. However when you buy an item in the store, things change. Sooner or later you're out of money or the store is out of stock.
