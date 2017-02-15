@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Initial release.",
-	"version": "0.1.0",
+	"releasenote": "Add List and Selection.",
+	"version": "0.2.0",
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"dependencies": {
 		"tink_state": "",
