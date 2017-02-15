@@ -209,9 +209,7 @@ Technically you can do things like `@:transition(return Date.now().getTime())` b
 
 # To cycle or not to cycle
 
-When you can, you should not build cycles in your data.
-
-First, how do you build cycles:
+When you can, you should not build cycles in your data. Let's look at an example of a cycle:
 
 ```haxe
 class Car implements coconut.data.Model {
@@ -223,7 +221,7 @@ class Driver implements coconut.data.Model {
 }
 ```
 
-This is merely a cycle in your object graph and not yet in your data flow. It's bad enough as it is, but let's bring it to full catastrophy:
+This is merely a cycle in your object graph and not yet in your data flow. It has problems of its own, but let's bring it to full catastrophy:
 
 ```haxe
 class Car implements coconut.data.Model {
@@ -239,7 +237,7 @@ class Driver implements coconut.data.Model {
 
 Access `new Car().isInsured` and you'll get a stack overflow.
 
-That said you could do it differently:
+That said, you could do it differently:
 
 ```haxe
 class Car implements coconut.data.Model {
@@ -258,9 +256,9 @@ class Driver implements coconut.data.Model {
 }
 ```
 
-There's still a lot of cyclical referencing going on though and its easily to create cyclical computation that blow up.
+There's still a lot of circular referencing going on though and that makes it easy to create circular computations that recurse into a stack overflow.
 
-What's more is though that this is not even necessarily a good model of cars and drivers. This might be a nice way to discribe it instead:
+What's more is though that this is not even necessarily a good model of cars and drivers. This might be a nice way to describe it instead:
 
 ```haxe
 class Car implements coconut.data.Model {
