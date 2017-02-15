@@ -1,24 +1,24 @@
 {
-  "name": "coconut.data",
-  "license": "MIT",
-  "tags": [
-    "data",
-    "state",
-    "cross",
-    "coconut",
-    "reactive",
-    "observable"
-  ],
-  "classPath": "src",
-  "contributors": [
-    "back2dos"
-  ],
-  "releasenote": "initial release",
-  "version": "0.0.0",
-  "url": "https://github.com/MVCoconut/coconut.data/",
-  "dependencies": {
-    "tink_state": "",
-    "tink_lang": "",
-    "tink_pure": ""
-  }
+	"name": "coconut.data",
+	"license": "MIT",
+	"tags": [
+		"data",
+		"state",
+		"cross",
+		"coconut",
+		"reactive",
+		"observable"
+	],
+	"classPath": "src",
+	"contributors": [
+		"back2dos"
+	],
+	"releasenote": "Initial release.",
+	"version": "0.1.0",
+	"url": "https://github.com/MVCoconut/coconut.data/",
+	"dependencies": {
+		"tink_state": "",
+		"tink_lang": "",
+		"tink_pure": ""
+	}
 }
