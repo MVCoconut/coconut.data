@@ -75,7 +75,7 @@ Because the computation is asynchronous its current state can assume any of the 
 
 ... is planned ;)
 
-#### Injecting services
+### Injecting services
 
 To properly modularize your application you will want to avoid depend your models on services directly as it is on the example. Instead you will want a setup that is more like this:
 
@@ -96,7 +96,7 @@ And of course you can still specify a default:
 
 This technique may also make sense for directly `@:computed` properties.
 
-#### Observables
+## Observables
 
 You may notice the `observable` field, which exposes one observable per each individual field to allow explicitly dealing with `tink_state` observables. It is absolutely safe to ignore and let coconut implicitly propagate changes through your application. Here is how you could use it by hand though:
 
@@ -207,7 +207,7 @@ Technically you can do things like `@:transition(return Date.now().getTime())` b
 
 ... is also planned ...
 
-## To cycle or not to cycle
+# To cycle or not to cycle
 
 When you can, you should not build cycles in your data.
 
@@ -296,13 +296,11 @@ class OutstandingWarrants implements coconut.data.Model {
 
 So you can do `var check = new OutstandingWarrants({car: someCar })` and as soon as the `someCar.licensePlate` you get a new result from `check.warrants`.
 
-### Cycles in Transitions
+## Cycles in Transitions
 
-It is also easy to create cycles with transitions. Calling `driver.stop()` calls `car.stop()` calls `driver.stop()` and so on. Using the above technique to have unidirectional object graphs of lean objects is a good way to avoid running into such a situation. Note virtually all applications are *inherently* loops. Usually the loop is closed through the UI invoking callbacks it was given that map down to transitions. But at times the loops might be fundamentally baked into the domain/application model.
+It is also easy to create cycles with transitions. Calling `driver.stop()` calls `car.stop()` calls `driver.stop()` and so on. Using the above technique to have unidirectional object graphs of lean objects is a good way to avoid running into such a situation. Still, down the line virtually all applications are *inherently* loops. Usually the loop is closed through the UI invoking callbacks it was given that map down to transitions. But at times the loops might be fundamentally baked into the domain/application model. This is ok, but if you have hundreds of them you should really take a hard look at how many of them are really necessary.
 
-Note that there's also often a way to eliminate transitions. It's not always desirable though.
-
-Imagine we have an application in which we model the user and login like so:
+One way to avoid getting caught up in a dense jungle of transitions is to eliminate transitions when possible (with reasonable effort). Imagine we have an application in which we model the user and login like so:
 
 ```haxe
 typedef Credentials = {
@@ -323,7 +321,7 @@ class User implements coconut.data.Model {
 }
 ```
 
-Guests have `None` as their `profile` and logged in users have `Some(value)` of course. By calling `login` we can transition from one state to the other. That is one way to express it. Instead, we might do the following:
+Guests have `None` as their `profile` and logged in users have `Some(value)` of course. By calling `login` we can transition from one state to the other. That is one way to express it. But instead, we might do the following:
 
 ```haxe
 class User implements coconut.data.Model {
