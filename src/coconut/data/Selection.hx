@@ -1,45 +1,15 @@
 package coconut.data;
 
-import tink.pure.List;
 using tink.CoreApi;
 
-interface Selection<T, R> extends Model {
+class Selection<T, R> implements Model {
   
-  var options(get, never):List<Named<T>>;
-  var selected(get, never):R;
+  @:editable private var active:List<T> = null;
 
-  function isActive(option:T):Bool;
-  function isEnabled(option:T):Bool;
-  function toggle(option:T):Bool;
-
-}
-
-abstract SingleSelection<T>(SelectionBase<T, T>) {
-  public function new(args:{ options: List<Named<T>>,  }) {
-    super({
-      options: args.options,
-      reduce: function (l) return l.iterator().next(),
-      toggler: function () {},
-    });
-  }
-}
-
-class MultipleSelection<T> extends SelectionBase<T, T> {
-  
-}
-
-enum OptionKind {
-  
-}
-
-class SelectionBase<T, R> implements Selection<T, R> {
-  
-  @:observable private var active:List<T>;
-
-  @:observable var options:List<Named<T>>;
-  @:observable var reduce:List<T>->R;
-  @:observable var toggler:List<T>->T->List<T>;
-  @:observable var comparator:T->T->Bool = function (x, y) return x == y;
+  @:constant var options:List<Named<T>>;
+  @:constant var reduce:List<T>->R;
+  @:constant var toggler:List<T>->T->List<T>;
+  @:constant var comparator:T->T->Bool = function (x, y) return x == y;
   
   @:computed var selected:R = reduce(active);
 
@@ -49,10 +19,47 @@ class SelectionBase<T, R> implements Selection<T, R> {
   public function isEnabled(option:T):Bool
     return true;
 
-  @:transition public function toggle(option:T):Bool {
+  public function toggle(option:T):Bool {
 
-    this.active = toggle(this.active, option);
+    this.active = toggler(this.active, option);
 
     return isActive(option);
+  }
+
+  static public function single<T>(options:List<Named<T>>):Selection<T, Option<T>>
+    return
+       new Selection({
+        options: options,
+        reduce: function (l) return switch l.iterator().next() {
+          case null: None;
+          case v: Some(v);
+        },
+        toggler: function (_, nu) return [nu],
+      });
+
+  static public function of<T>(init:Named<T>):{ function or(rest:List<Named<T>>):Selection<T, T>; }
+    return {
+      or: function (rest) {
+        var ret = new Selection({
+          options: rest.prepend(init),
+          reduce: function (l):T return l.iterator().next(),
+          toggler: function (_, nu) return [nu],
+        });
+        ret.toggle(init.value);
+        return ret;
+      } 
+    }
+
+  static public function multiple<T>(options:List<Named<T>>):Selection<T, List<T>> {
+    return new Selection({
+      options: options,
+      reduce: function (l) return l,
+      toggler: 
+        function (old, nu) return 
+          switch old.filter(function (i) return i != null) {
+            case same if (same.length == old.length): old.prepend(nu);
+            case v: v;
+          },
+    });
   }
 }

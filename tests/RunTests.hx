@@ -5,6 +5,7 @@ import tink.unit.Assert.*;
 
 import tink.state.Observable;
 import tink.state.Promised;
+import coconut.data.Selection;
 
 using tink.CoreApi;
 
