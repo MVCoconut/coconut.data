@@ -77,7 +77,7 @@ Because the computation is asynchronous its current state can assume any of the 
 
 #### Injecting services
 
-To properly modularize your application you will want to avoid depend your modules on services directly as it is on the example. Instead you will want a setup that is more like this:
+To properly modularize your application you will want to avoid depend your models on services directly as it is on the example. Instead you will want a setup that is more like this:
 
 ```haxe 
 class TodoItem implements Model {
@@ -88,13 +88,17 @@ class TodoItem implements Model {
 }
 ```
 
-And of course you can still do `@:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<Iterable<TodoItem>> = @byDefault Server; };`.
+And of course you can still specify a default:
+
+```haxe
+@:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<Iterable<TodoItem>>; } = @byDefault Server;`.
+```
 
 This technique may also make sense for directly `@:computed` properties.
 
 #### Observables
 
-You may notice the `observable` field, which exposes an observable for each individual field to allow explicitly dealing with `tink_state` observables. It is absolutely safe to ignore and let coconut implicitly propagate changes through your application. Here is how you could use it by hand though:
+You may notice the `observable` field, which exposes one observable per each individual field to allow explicitly dealing with `tink_state` observables. It is absolutely safe to ignore and let coconut implicitly propagate changes through your application. Here is how you could use it by hand though:
 
 ```haxe
 var todo = new TodoItem({ description: 'Hello, World!'});
