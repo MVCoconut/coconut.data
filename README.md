@@ -362,9 +362,6 @@ Coconut does its best to try enforcing every field of a model holding a value wh
 
 This leaves a couple of type holes. For example `Iterator<Int>` will slip through, even though clearly it is neither constant nor observable.
 
-This is an area deserving of improvement, but there's only two ways forward:
-
-1. Become very defensive about what values are allowed
-2. Hope for a little help from Haxe itself to express immutability
+This is an area deserving of improvement, but without a some help from Haxe itself to determine immutability, very little progress is to be expected. Note thought that in `coconut.ui` a second pass of checks is performed, thus closing *some* of the type holes created by type parameters.
 
 You can always tag a type `@:pure` or `@:observable` to feed data into coconut, that it would not consider acceptable otherwise. You may also add `@:skipCheck` on a model's field to bypass the check. Note that misuse of these features can lead to a situation where state changes are not properly propagated through you application.
