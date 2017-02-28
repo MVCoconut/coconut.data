@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Add List and Selection.",
-	"version": "0.2.0",
+	"releasenote": "Enforced observability.",
+	"version": "0.3.0",
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"dependencies": {
 		"tink_state": "",
