@@ -2,7 +2,7 @@
 
 This library is the meat of the coconut, so to speak. It allows you to model your domain and application state based on the following principles:
 
-1. **All state changes MUST BE observable**. This is achieved by making all data either constant or observable. We'll talk about that in a moment.
+1. **All state changes MUST BE observable**. This is achieved by making all data either constant or observable. We'll talk about that [towards the end](#enforced-observability).
 2. **Data flow SHOULD BE unidirectional**. Coconut Data does not *enforce* this, because the what we're really after is for data flow to be **easy to follow**. Making it unidirectional almost always helps with that. However on occassion there are scenarios in which linearization obscures the data flow instead of simplifying it. Instead of wasting energy on trying to make it hard for you to build cycles into your flow, Coconut Data focusses on giving you powerful tools to avoid having to resort to cycles in the first place.
 
 # Models
@@ -347,3 +347,24 @@ class User implements coconut.data.Model {
 
 The difference here is: you can log in 100 times with the same credentials, the result will be the same - unless they change in the meantime or your connection or the server goes down or the server engages some flood control after 3 attempts ... but for the sake of the argument let's just say the result will be the same. If for some reason the `profile` field had to be reloaded with the same credentials it is quite safe to assume the result would be the same. However when you buy an item in the store, things change. Sooner or later you're out of money or the store is out of stock.
 
+# Enforced Observability
+
+Coconut does its best to try enforcing every field of a model holding a value which is observable, where immutable values are treated as a special case of observability (a particularly trivial one at that). The following types are thus considered observable:
+
+- `Int`, `Float`, `Bool`, `String`, `Date`
+- Any type decorated with `@:pure` or `@:observable`
+- Any enum for which all constructors are observable
+- Any subtype of `coconut.data.Model`
+- Any subtype of `tink.state.Observable.ObservableObject` (thus including `State` and `Observable`)
+- Any function - this is a bit of a stretch
+- Any anonymous object who's fields all have observable type and write access `never`
+- Any type parameter - because this is hard to check
+
+This leaves a couple of type holes. For example `Iterator<Int>` will slip through, even though clearly it is neither constant nor observable.
+
+This is an area deserving of improvement, but there's only two ways forward:
+
+1. Become very defensive about what values are allowed
+2. Hope for a little help from Haxe itself to express immutability
+
+You can always tag a type `@:pure` or `@:observable` to feed data into coconut, that it would not consider acceptable otherwise. You may also add `@:skipCheck` on a model's field to bypass the check. Note that misuse of these features can lead to a situation where state changes are not properly propagated through you application.

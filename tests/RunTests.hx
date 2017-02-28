@@ -13,10 +13,10 @@ class RunTests {
 
   static function main() {
     run([
-        new TodoModelTest(),
-        new SelectionTest(),
+      new TodoModelTest(),
+      new SelectionTest(),
     ]).handle(function(result) {
-        exit(result.errors);
+      exit(result.errors);
     });
   }
   
@@ -182,11 +182,24 @@ class TodoModelTest {
 
 }
 
+enum Foople {
+  Froz(a:Array<Int>);
+}
+@:observable enum Foople2 {
+  Froz2(a:Array<Int>);
+}
+
 class TodoItem implements coconut.data.Model {
 
   @:constant var server:{ function loadSimilarTodos(description:String):Promise<Iterable<TodoItem>>; };
   @:constant var created:Date = @byDefault Date.now();
   
+  @:constant var whatever:Option<Observable<List<TodoItem>>> = None;
+  @:constant var whatever2:Observable<String> = '';
+  @:skipCheck @:constant var whatever3:Array<String> = [];
+  @:skipCheck @:constant var whatever4:Foople = Froz([]);
+  @:constant var whatever5:Foople2 = Froz2([]);
+
   @:editable var completed:Bool = false;
   @:editable var description:String;
 

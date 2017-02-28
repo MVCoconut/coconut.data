@@ -103,6 +103,11 @@ class ModelBuilder {
                 member.pos.error('Plain fields not allowed on models');
               case Some(v):
                 var name = member.name;
+                if (!member.extractMeta(':skipCheck').isSuccess())
+                  switch Models.check(member.pos.getOutcome(t.toType())) {
+                    case []:
+                    case v: member.pos.error(v[0]);
+                  }
                 var res = v.apply({
                   name: name,
                   type: t,
