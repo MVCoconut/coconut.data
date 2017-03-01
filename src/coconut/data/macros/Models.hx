@@ -18,9 +18,12 @@ class Models {
     return
       switch pack.concat([name]).join('.') {
         case  'Date' | 'Int' | 'String' | 'Bool' | 'Float': true;
-        case 'tink.core.NamedWith' | 'tink.core.Pair': true;
         case 'tink.pure.List': true;
-        default: false;
+        default: 
+          switch [pack, name] {
+            case [['tink', 'core'], 'NamedWith' | 'Pair' | 'Lazy' | 'TypedError' | 'Future' | 'Promise']: true;
+            default: false;
+          };
       }
   
   static public function check(t:Type):Array<String>
@@ -39,6 +42,8 @@ class Models {
 
           ret;  
         case TFun(_, _): [];   
+        case TAbstract(_.get() => a, _) if (!a.meta.has(':coreType') && check(a.type).length == 0): []; 
+        case TAbstract(_.get().meta.has(':enum') => true, _): [];
         case TInst(_.get().kind => KTypeParameter(_), _): [];
         case TInst(_, params) | TAbstract(_, params) 
           if (Context.unify(t, Context.getType('tink.state.Observable.ObservableObject')) || Context.unify(t, Context.getType('coconut.data.Model'))):
@@ -68,8 +73,8 @@ class Models {
         case TAbstract(_.get() => { pack: pack, name: name }, params) 
            | TInst(_.get() => { pack: pack, name: name }, params) 
              if (considerValid(pack, name)):
-
           [for (p in params) for (s in check(p)) s];
+        case TDynamic(null): [];
         case v:
           [t.toString() + ' is not acceptable coconut data'];
       }
