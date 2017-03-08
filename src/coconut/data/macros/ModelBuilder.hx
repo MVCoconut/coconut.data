@@ -148,14 +148,14 @@ class ModelBuilder {
                 function getValue() 
                   return switch res.init {
                     case Value(e): macro @:pos(e.pos) ($e : $t);
-                    case Arg(t): 
+                    case Arg(type): 
                       cFunc.args[0].opt = false;
-                      addArg(t);
+                      addArg(type);
                       macro initial.$name;
 
-                    case OptArg(e, t):
+                    case OptArg(e, type):
                       
-                      addArg(OPTIONAL, t);
+                      addArg(OPTIONAL, type);
                       macro switch initial.$name {
                         case null: @:pos(e.pos) ($e : $t);
                         case v: v;
