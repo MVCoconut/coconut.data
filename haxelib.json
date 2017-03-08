@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Refinement of observability check.",
-	"version": "0.3.1",
+	"releasenote": "Support external states.",
+	"version": "0.4.0",
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"dependencies": {
 		"tink_state": "",
