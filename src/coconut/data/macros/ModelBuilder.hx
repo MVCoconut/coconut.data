@@ -20,14 +20,15 @@ private typedef FieldContext = {
 private enum Init {
   Skip;
   Value(e:Expr);
-  Arg;
-  OptArg(defaultsTo:Expr);
+  Arg(?type:ComplexType);
+  OptArg(defaultsTo:Expr, ?type:ComplexType);
 }
 
 private typedef Result = {
   var getter(default, null):Expr;
   @:optional var setter(default, null):Expr;
   @:optional var stateful(default, null):Bool;
+  @:optional var transitionable(default, null):Bool;
   @:optional var type(default, null):ComplexType;
   var init(default, null):Init;
 }
@@ -48,6 +49,7 @@ class ModelBuilder {
 
     fieldDirectives = [
       new Named(':constant'  , constantField),
+      new Named(':external'  , externalField),
       new Named(':computed'  , computedField.bind(_, false)),
       new Named(':loaded'    , computedField.bind(_, true)), 
       new Named(':editable'  , observableField.bind(_, true)),
@@ -135,25 +137,25 @@ class ModelBuilder {
                 member.kind = FProp('get', setter, finalType, null);
                 member.publish();
 
-                function addArg(?meta)
+                function addArg(?meta, ?type)
                   argFields.push({
                     name: name,
                     pos: member.pos,
                     meta: meta,
-                    kind: FProp('default', 'null', t),
+                    kind: FProp('default', 'null', if (type == null) t else type),
                   });
 
                 function getValue() 
                   return switch res.init {
                     case Value(e): macro @:pos(e.pos) ($e : $t);
-                    case Arg: 
+                    case Arg(t): 
                       cFunc.args[0].opt = false;
-                      addArg();
+                      addArg(t);
                       macro initial.$name;
 
-                    case OptArg(e):
+                    case OptArg(e, t):
                       
-                      addArg(OPTIONAL);
+                      addArg(OPTIONAL, t);
                       macro switch initial.$name {
                         case null: @:pos(e.pos) ($e : $t);
                         case v: v;
@@ -164,7 +166,7 @@ class ModelBuilder {
                   }
 
                 if (res.stateful) {
-                  if (setter == 'never')
+                  if (res.transitionable)
                     transitionFields.push({
                       name: name,
                       pos: member.pos,
@@ -177,8 +179,14 @@ class ModelBuilder {
                       throw "assert";
                     case e: 
                       var state = stateOf(name);
+                      var st = 
+                        if (v.meta.name == ':external')
+                          macro : tink.state.Observable<$t> 
+                        else 
+                          macro : tink.state.State<$t>;
+
                       add(macro class {
-                        @:noCompletion private var $state:tink.state.State<$t>;
+                        @:noCompletion private var $state:$st;
                       });
                       constr.init(state, e.pos, Value(e));
                   }
@@ -189,20 +197,22 @@ class ModelBuilder {
                     constr.init(name, member.pos, Value(v), { bypass: true });
                 }  
 
-                observableFields.push({
-                  name: name,
-                  pos: member.pos,
-                  kind: FProp('default', 'never', macro : tink.state.Observable<$finalType>)
-                });                
+                if (member.isPublic) {
+                  observableFields.push({
+                    name: name,
+                    pos: member.pos,
+                    kind: FProp('default', 'never', macro : tink.state.Observable<$finalType>)
+                  });                
 
-                observableInit.push({
-                  field: name,
-                  expr: 
-                    switch stateOf(name) {
-                      case obs if (c.hasMember(obs)): macro this.$obs;
-                      default: macro this.$name;
-                    }
-                });
+                  observableInit.push({
+                    field: name,
+                    expr: 
+                      switch stateOf(name) {
+                        case obs if (c.hasMember(obs)): macro this.$obs;
+                        default: macro this.$name;
+                      }
+                  });
+                }
             }
 
             switch member.extractMeta(':transition') {
@@ -278,13 +288,28 @@ class ModelBuilder {
     for (f in td.fields)
       c.addMember(f);  
 
+  function externalField(ctx:FieldContext):Result {
+    var state = stateOf(ctx.name),
+        type = ctx.type;
+    return {
+      getter: macro this.$state.value,
+      init: switch ctx.expr {
+        case null: Arg(macro : tink.state.Observable<$type>);
+        case macro @byDefault $e: OptArg(e, macro : tink.state.Observable<$type>);
+        case e: e.reject('@:external fields cannot be initialized. Consider using @:constant or @:computed instead');
+      },
+      type: type,
+      stateful: true,      
+    }
+  }
+
   function constantField(ctx:FieldContext):Result {
     var name = ctx.name;
     
     return {
       getter: macro @:pos(ctx.pos) this.$name,
       init: switch ctx.expr {
-        case null: Arg;
+        case null: Arg();
         case macro @byDefault $v: OptArg(v);
         case v: Value(v);
       },
@@ -292,23 +317,29 @@ class ModelBuilder {
   }
 
   function computedField(ctx:FieldContext, async:Bool):Result {
+    
     var state = stateOf(ctx.name),
-        t = switch [async, ctx.type] {
+        type = switch [async, ctx.type] {
           case [true, v]:
             macro : tink.state.Promised<$v>;
           case [_, v]: v;
-        }
+        },
+        comp = switch [async, ctx.type] {
+          case [true, v]:
+            macro : tink.core.Promise<$v>;
+          case [_, v]: v;
+        };
+
+    c.getConstructor().init(state, ctx.pos, Value(macro tink.state.Observable.auto(function ():$comp return ${ctx.expr})));
 
     add(macro class {
-      @:noCompletion private var $state:tink.state.Observable<$t>;
+      @:noCompletion private var $state:tink.state.Observable<$type>;
     });
-
-    c.getConstructor().init(state, ctx.pos, Value(macro tink.state.Observable.auto(function () return ${ctx.expr})));
 
     return {
       getter: macro this.$state.value,
       init: Skip,
-      type: t,
+      type: type,
     }
   }
 
@@ -327,8 +358,9 @@ class ModelBuilder {
       getter: macro @:pos(ctx.pos) this.$state.value,
       setter: if (setter) macro @:pos(ctx.pos) this.$state.set(param) else null,
       stateful: true,
+      transitionable: !setter,
       init: switch ctx.expr {
-        case null: Arg;
+        case null: Arg();
         case macro @byDefault $v: OptArg(v);
         case v: Value(v);
       },
