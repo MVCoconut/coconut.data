@@ -38,12 +38,15 @@ class ModelBuilder {
   var fieldDirectives:Array<Named<FieldContext->Result>>;
 
   var c:ClassBuilder;
+  var isInterface:Bool;
 
   public function new(c) {
 
+    //TODO: refactor this horrible piece of crap
+
     this.c = c;
 
-    if (c.target.isInterface) return;
+    this.isInterface = c.target.isInterface;
     
     var OPTIONAL = [{ name: ':optional', params: [], pos: c.target.pos }];
 
@@ -55,9 +58,12 @@ class ModelBuilder {
       new Named(':editable'  , observableField.bind(_, true)),
       new Named(':observable', observableField.bind(_, false)),
     ];
-    
-    if (!c.target.meta.has(':tink'))
-      c.target.meta.add(':tink', [], c.target.pos);
+
+    if (isInterface)
+      fieldDirectives = fieldDirectives.filter(function (n) return n.name != ':loaded');
+    else
+      if (!c.target.meta.has(':tink'))
+        c.target.meta.add(':tink', [], c.target.pos);
     
     if (c.hasConstructor())
       c.getConstructor().toHaxe().pos.error('Custom constructors not allowed in models');
@@ -74,8 +80,13 @@ class ModelBuilder {
     var cFunc = (macro function (?initial:$argType) {
     }).getFunction().sure();
 
-    var constr = c.getConstructor(cFunc);
-    constr.publish();
+    var constr = 
+      if (!isInterface) {
+        var c = c.getConstructor(cFunc);
+        c.publish();
+        c;
+      }
+      else null;
 
     for (member in c) 
       if (!member.isStatic)
@@ -91,6 +102,107 @@ class ModelBuilder {
             
             var found = None;
 
+            function addResult(res:Result, external:Bool) {
+              var name = member.name;
+
+              var finalType = switch res.type {
+                case null: t;
+                case v: v;
+              }
+
+              if (res.getter != null)
+                c.addMember(Member.getter(name, res.getter, finalType));
+
+              var setter = 
+                switch res.setter {
+                  case null:
+                    'never';
+                  case v:
+                    c.addMember(Member.setter(name, v, finalType));
+                    'set';
+                }
+
+              member.kind = FProp('get', setter, finalType, null);
+              member.publish();
+
+              function addArg(?meta, ?type)
+                argFields.push({
+                  name: name,
+                  pos: member.pos,
+                  meta: meta,
+                  kind: FProp('default', 'null', if (type == null) t else type),
+                });
+
+              function getValue() 
+                return switch res.init {
+                  case Value(e): macro @:pos(e.pos) ($e : $t);
+                  case Arg(type): 
+                    cFunc.args[0].opt = false;
+                    addArg(type);
+                    macro initial.$name;
+
+                  case OptArg(e, type):
+                    
+                    addArg(OPTIONAL, type);
+                    macro switch initial.$name {
+                      case null: @:pos(e.pos) ($e : $t);
+                      case v: v;
+                    }
+
+                  case Skip: 
+                    null;
+                }
+
+              if (res.stateful) {
+                if (res.transitionable)
+                  transitionFields.push({
+                    name: name,
+                    pos: member.pos,
+                    kind: FProp('default', 'never', t),
+                    meta: OPTIONAL,
+                  });
+
+                switch getValue() {
+                  case null:
+                    throw "assert";
+                  case e: 
+                    var state = stateOf(name);
+                    var st = 
+                      if (external)
+                        macro : tink.state.Observable<$t> 
+                      else 
+                        macro : tink.state.State<$t>;
+
+                    add(macro class {
+                      @:noCompletion private var $state:$st;
+                    });
+                    constr.init(state, e.pos, Value(e));
+                }
+              }
+              else switch getValue() {
+                case null:
+                case v:
+                  constr.init(name, member.pos, Value(v), { bypass: true });
+              }  
+
+              if (member.isPublic) {
+                observableFields.push({
+                  name: name,
+                  pos: member.pos,
+                  kind: FProp('default', 'never', macro : tink.state.Observable<$finalType>)
+                });                
+
+                observableInit.push({
+                  field: name,
+                  expr: 
+                    switch stateOf(name) {
+                      case obs if (c.hasMember(obs)): macro this.$obs;
+                      default: macro this.$name;
+                    }
+                });
+              }
+            }
+
             for (directive in fieldDirectives) 
               found = 
                 switch [found, member.extractMeta(directive.name)] {
@@ -100,119 +212,36 @@ class ModelBuilder {
                   case [v, _]: v;
                 }
 
+            if (!member.extractMeta(':skipCheck').isSuccess())
+              switch Models.check(member.pos.getOutcome(t.toType())) {
+                case []:
+                case v: member.pos.error(v[0]);
+              }
+
             switch found {
               case None: 
-                member.pos.error('Plain fields not allowed on models');
+                if (isInterface) {
+                  addResult({ 
+                    init: Skip, 
+                    getter: null, 
+                    type: if (member.extractMeta(':loaded').isSuccess()) macro : tink.state.Promised<$t> else null,
+                  }, false);
+                }
+                else
+                  member.pos.error('Plain fields not allowed on models');
               case Some(v):
-                var name = member.name;
-                if (!member.extractMeta(':skipCheck').isSuccess())
-                  switch Models.check(member.pos.getOutcome(t.toType())) {
-                    case []:
-                    case v: member.pos.error(v[0]);
-                  }
-                var res = v.apply({
-                  name: name,
+
+                if (isInterface)
+                  v.meta.pos.error('Directives other than `@:loaded` not allowed on interface fields');
+
+                addResult(v.apply({
+                  name: member.name,
                   type: t,
                   expr: e,
                   pos: member.pos,
                   meta: v.meta,
-                });
+                }), v.meta.name == ':external');
 
-                var finalType = switch res.type {
-                  case null: t;
-                  case v: v;
-                }
-
-                c.addMember(Member.getter(name, res.getter, finalType));
-
-                var setter = 
-                  switch res.setter {
-                    case null:
-                      'never';
-                    case v:
-                      c.addMember(Member.setter(name, v, finalType));
-                      'set';
-                  }
-
-                member.kind = FProp('get', setter, finalType, null);
-                member.publish();
-
-                function addArg(?meta, ?type)
-                  argFields.push({
-                    name: name,
-                    pos: member.pos,
-                    meta: meta,
-                    kind: FProp('default', 'null', if (type == null) t else type),
-                  });
-
-                function getValue() 
-                  return switch res.init {
-                    case Value(e): macro @:pos(e.pos) ($e : $t);
-                    case Arg(type): 
-                      cFunc.args[0].opt = false;
-                      addArg(type);
-                      macro initial.$name;
-
-                    case OptArg(e, type):
-                      
-                      addArg(OPTIONAL, type);
-                      macro switch initial.$name {
-                        case null: @:pos(e.pos) ($e : $t);
-                        case v: v;
-                      }
-
-                    case Skip: 
-                      null;
-                  }
-
-                if (res.stateful) {
-                  if (res.transitionable)
-                    transitionFields.push({
-                      name: name,
-                      pos: member.pos,
-                      kind: FProp('default', 'never', t),
-                      meta: OPTIONAL,
-                    });
-
-                  switch getValue() {
-                    case null:
-                      throw "assert";
-                    case e: 
-                      var state = stateOf(name);
-                      var st = 
-                        if (v.meta.name == ':external')
-                          macro : tink.state.Observable<$t> 
-                        else 
-                          macro : tink.state.State<$t>;
-
-                      add(macro class {
-                        @:noCompletion private var $state:$st;
-                      });
-                      constr.init(state, e.pos, Value(e));
-                  }
-                }
-                else switch getValue() {
-                  case null:
-                  case v:
-                    constr.init(name, member.pos, Value(v), { bypass: true });
-                }  
-
-                if (member.isPublic) {
-                  observableFields.push({
-                    name: name,
-                    pos: member.pos,
-                    kind: FProp('default', 'never', macro : tink.state.Observable<$finalType>)
-                  });                
-
-                  observableInit.push({
-                    field: name,
-                    expr: 
-                      switch stateOf(name) {
-                        case obs if (c.hasMember(obs)): macro this.$obs;
-                        default: macro this.$name;
-                      }
-                  });
-                }
             }
 
             switch member.extractMeta(':transition') {
@@ -263,23 +292,28 @@ class ModelBuilder {
               }
                 
         }
+    if (isInterface) 
+      add(macro class {
+        var observables(default, never):$observables;
+      });
+    else {
+      if (cFunc.args[0].opt)
+        constr.addStatement(macro initial = {}, true);
+      constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
+      var updates = [];
+      
+      for (f in transitionFields) {
+        var name = f.name;
+        updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
+      }
 
-    if (cFunc.args[0].opt)
-      constr.addStatement(macro initial = {}, true);
-    constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
-    var updates = [];
-    
-    for (f in transitionFields) {
-      var name = f.name;
-      updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
+      add(macro class {
+        @:noCompletion function __cocoupdate(delta:$transitionType) $b{updates};
+        public var observables(default, never):$observables;
+      });
+
+      c.target.meta.add(':final', [], c.target.pos);
     }
-
-    add(macro class {
-      @:noCompletion function __cocoupdate(delta:$transitionType) $b{updates};
-      public var observables(default, never):$observables;
-    });
-
-    c.target.meta.add(':final', [], c.target.pos);
   }
   static public function stateOf(name:String)
     return '__coco_$name';
