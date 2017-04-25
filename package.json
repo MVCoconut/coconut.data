@@ -1,10 +1,10 @@
 {
-  "name": "tink_web",
+  "name": "coconut.data",
   "version": "0.0.0",
   "description": "",
   "scripts": {
+	"travix": "haxe -lib travix --run travix.Travix",
     "haxelib": "haxelib",
-    "travix": "haxe -lib travix --run travix.Travix",
     "postinstall": "lix download"
   },
   "dependencies": {

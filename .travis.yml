@@ -11,7 +11,7 @@ install:
   - npm install
 
 script:
-  - travix neko .
+  - npm run travix neko .
   - npm run travix node .
   - npm run travix php .
   - npm run travix js .
