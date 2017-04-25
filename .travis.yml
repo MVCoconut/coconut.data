@@ -13,6 +13,6 @@ install:
 script:
   - npm run travix neko .
   - npm run travix node .
-  - npm run travix php .
+  #- npm run travix php .
   - npm run travix js .
   - npm run travix python .

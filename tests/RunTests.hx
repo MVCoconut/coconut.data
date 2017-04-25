@@ -3,7 +3,7 @@ package ;
 import tink.testrunner.Runner.*;
 import tink.unit.*;
 
-import tink.state.Observable;
+import tink.state.*;
 import tink.state.Promised;
 import coconut.data.*;
 
@@ -184,6 +184,9 @@ class TodoItem implements coconut.data.Model {
   @:skipCheck @:constant var whatever4:Foople = Froz([]);
   @:constant var whatever5:Foople2 = Froz2([]);
 
+  @:constant var array:ObservableArray<Int> = null;
+  @:constant var map:ObservableMap<String, Int> = null;
+  
   @:editable var completed:Bool = false;
   @:editable var description:String;
 

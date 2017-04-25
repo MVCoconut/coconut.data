@@ -26,6 +26,9 @@ class Models {
           };
       }
   
+  static function checkMany(params:Array<Type>) 
+    return [for (p in params) for (s in check(p)) s];
+
   static public function check(t:Type):Array<String>
     return 
       switch t.reduce() {
@@ -45,14 +48,19 @@ class Models {
         case TAbstract(_.get() => a, _) if (!a.meta.has(':coreType') && check(a.type).length == 0): []; 
         case TAbstract(_.get().meta.has(':enum') => true, _): [];
         case TInst(_.get().kind => KTypeParameter(_), _): [];
+        case TInst(_.get() => { pack: ['tink', 'state'], name: 'ObservableArray' | 'ObservableMap' }, params): checkMany(params);
         case TInst(_, params) | TAbstract(_, params) 
-          if (Context.unify(t, Context.getType('tink.state.Observable.ObservableObject')) || Context.unify(t, Context.getType('coconut.data.Model'))):
-            [for (p in params) for (s in check(p)) s]; 
+          if (
+            Context.unify(t, Context.getType('tink.state.Observable.ObservableObject')) 
+              || 
+            Context.unify(t, Context.getType('coconut.data.Model'))
+          ):
+            checkMany(params);
         case TAbstract(_.get().meta => m, params)
            | TEnum(_.get().meta => m, params)
            | TInst(_.get().meta => m, params) if (m.has(':pure') || m.has(':observable')):
 
-          [for (p in params) for (s in check(p)) s]; 
+          checkMany(params);
         case TEnum(_.get() => e, params):
           var ret = [];
           for (c in e.constructs) 
@@ -66,14 +74,13 @@ class Models {
 
           if (ret.length == null)
             e.meta.add(':observable', [], e.pos);
-          
-          for (p in params) for (s in check(p)) ret.push(s);
 
-          ret;
+          ret.concat(checkMany(params));
+
         case TAbstract(_.get() => { pack: pack, name: name }, params) 
            | TInst(_.get() => { pack: pack, name: name }, params) 
              if (considerValid(pack, name)):
-          [for (p in params) for (s in check(p)) s];
+          checkMany(params);
         case TDynamic(null): [];
         case v:
           [t.toString() + ' is not acceptable coconut data'];
