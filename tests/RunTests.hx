@@ -1,7 +1,7 @@
 package ;
 
-import tink.unit.TestRunner.*;
-import tink.unit.Assert.*;
+import tink.testrunner.Runner.*;
+import tink.unit.*;
 
 import tink.state.Observable;
 import tink.state.Promised;
@@ -12,12 +12,10 @@ using tink.CoreApi;
 class RunTests {
 
   static function main() {
-    run([
+    run(TestBatch.make([
       new TodoModelTest(),
       new SelectionTest(),
-    ]).handle(function(result) {
-      exit(result.errors);
-    });
+    ])).handle(exit);
   }
   
 }
@@ -30,79 +28,62 @@ class SelectionTest {
 
   @:describe("single selection")
   @:describe("  without unselect")
-  public function singleWithoutUnselect() {
-    
-    var ret = isTrue(true);
-
-    function assert(b:Bool, ?pos:haxe.PosInfos)
-      ret = ret && isTrue(b, pos);
-
+  public function singleWithoutUnselect(test:AssertionBuffer) {
     var s = Selection.single(options);
-    assert(s.selected == None);
+
+    test.assert(s.selected == None);
+    
     for (v in options) {
-      assert(s.toggle(v.value));
-      assert(Type.enumEq(Some(v.value), s.selected));
-      assert(s.toggle(v.value));
-      assert(Type.enumEq(Some(v.value), s.selected));
+      test.assert(s.toggle(v.value));
+      test.assert(Type.enumEq(Some(v.value), s.selected));
+      test.assert(s.toggle(v.value));
+      test.assert(Type.enumEq(Some(v.value), s.selected));
     }
-    return ret;
+
+    return test.done();
   }
 
   @:describe("  with unselect")
-  public function singleWithUnselect() {
-    
-    var ret = isTrue(true);
-
-    function assert(b:Bool, ?pos:haxe.PosInfos)
-      ret = ret && isTrue(b, pos);
-
+  public function singleWithUnselect(test:AssertionBuffer) {
     var s = Selection.single(options, { canUnselect: true });
-    assert(s.selected == None);
+
+    test.assert(s.selected == None);
+    
     for (v in options) {
-      assert(s.toggle(v.value));
-      assert(Type.enumEq(Some(v.value), s.selected));
-      assert(!s.toggle(v.value));
-      assert(s.selected == None);
-      assert(s.toggle(v.value));
+      test.assert(s.toggle(v.value));
+      test.assert(Type.enumEq(Some(v.value), s.selected));
+      test.assert(!s.toggle(v.value));
+      test.assert(s.selected == None);
+      test.assert(s.toggle(v.value));
     }
-    return ret;
+
+    return test.done();
   }  
 
   @:describe("  non-optional")
-  public function testNonOptional() {
-
-    var ret = isTrue(true);
-
-    function assert(b:Bool, ?pos:haxe.PosInfos)
-      ret = ret && isTrue(b, pos);
-    
+  public function testNonOptional(test:AssertionBuffer) {
     var s = Selection.of(options[0]).or(options.slice(1));
 
     for (v in options) {
-      assert(s.toggle(v.value));
-      assert(v.value == s.selected);
-      assert(s.toggle(v.value));
+      test.assert(s.toggle(v.value));
+      test.assert(v.value == s.selected);
+      test.assert(s.toggle(v.value));
     }
 
-    return ret;
+    return test.done();
   }
 
   @:describe("multiple selection")
-  public function testMultiple() {
-
-    var ret = isTrue(true);
-
-    function assert(b:Bool, ?pos:haxe.PosInfos)
-      ret = ret && isTrue(b, pos);
+  public function testMultiple(test:AssertionBuffer) {
 
     var s = Selection.multiple(options);
     for (v in options) {
-      assert(s.toggle(v.value));
-      assert(!s.toggle(v.value));
-      assert(s.toggle(v.value));
+      test.assert(s.toggle(v.value));
+      test.assert(!s.toggle(v.value));
+      test.assert(s.toggle(v.value));
     }
-    assert(options.length == s.selected.length);
-    return ret;
+    test.assert(options.length == s.selected.length);
+    return test.done();
   }
 }
 
@@ -110,25 +91,22 @@ class TodoModelTest {
   public function new() {}
 
   @:describe("@:transition") 
-  public function testTransitions() {
+  public function testTransitions(test:AssertionBuffer) {
     var rates = new Rates();
-    
-
-    var ret = isTrue(true);
 
     function checksum()
-      ret = ret && equals(100, rates.taxRate + rates.luxuryRate + rates.scienceRate);
+      test.assert(rates.taxRate + rates.luxuryRate + rates.scienceRate == 100);
 
     checksum();
 
     rates.setTaxRate(50);
 
-    ret = ret && equals(50, rates.taxRate);
-    ret = ret && equals(0, rates.luxuryRate);
+    test.assert(rates.taxRate == 50);
+    test.assert(rates.luxuryRate == 0);
     
     checksum();
 
-    for (i in 0...100) {
+    for (i in 0...20) {
       rates.setLuxuryRate(Std.random(200) - 50);
       checksum();
       rates.setTaxRate(Std.random(200) - 50);
@@ -139,15 +117,15 @@ class TodoModelTest {
     rates.setTaxRate(40).handle(function (o) sum += o.sure());
     rates.setLuxuryRate(30).handle(function (o) sum += o.sure());
     
-    ret = ret && equals(70, sum);
+    test.assert(sum == 70);
 
     checksum();
 
-    return ret;
+    return test.done();
   }
 
   @:describe("@:loaded")
-  public function testLoaded() {
+  public function testLoaded(test:AssertionBuffer) {
     
     var called = false,
         empty:Iterable<TodoItem> = [];
@@ -162,7 +140,8 @@ class TodoModelTest {
 
     var item = new TodoItem({ description: 'test', server: {loadSimilarTodos:loadSimilarTodos} }),
         expected = [Loading, Done(empty)];
-    return Future.async(function (cb) {
+        
+    Future.async(function (cb) {
       if (called) {
         cb(Failure(new Error('@:loaded is not lazy')));
         return;
@@ -177,7 +156,12 @@ class TodoModelTest {
         if (expected.length == 0)
           cb(Success(Noise));
       });
+    }).handle(function (o) {
+      test.assert(o.isSuccess());
+      test.done();
     });
+
+    return test;
   }
 
 }
