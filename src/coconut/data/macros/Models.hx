@@ -40,7 +40,7 @@ class Models {
                 for (s in check(f.type))
                   ret.push(s);
               default:
-                ret.push('Field ${f.name} of ${t.toString()} needs to have write access `never`');
+                ret.push('Field `${f.name}` of `${t.toString()}` needs to have write access `never`');
             }   
 
           ret;  
