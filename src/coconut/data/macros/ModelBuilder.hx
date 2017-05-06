@@ -298,7 +298,7 @@ class ModelBuilder {
       });
     else {
       if (cFunc.args[0].opt)
-        constr.addStatement(macro initial = {}, true);
+        constr.addStatement(macro if(initial == null) initial = {}, true);
       constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
       var updates = [];
       
