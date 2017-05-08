@@ -3,7 +3,7 @@
 This library is the meat of the coconut, so to speak. It allows you to model your domain and application state based on the following principles:
 
 1. **All state changes MUST BE observable**. This is achieved by making all data either constant or observable. We'll talk about that [towards the end](#enforced-observability).
-2. **Data flow SHOULD BE unidirectional**. Coconut Data does not *enforce* this, because the what we're really after is for data flow to be **easy to follow**. Making it unidirectional almost always helps with that. However on occassion there are scenarios in which linearization obscures the data flow instead of simplifying it. Instead of wasting energy on trying to make it hard for you to build cycles into your flow, Coconut Data focusses on giving you powerful tools to avoid having to resort to cycles in the first place.
+2. **Data flow SHOULD BE unidirectional**. Coconut Data does not *enforce* this, because what we're really after is for data flow to be **easy to follow**. Making it unidirectional almost always helps with that. However on occassion there are scenarios in which linearization obscures the data flow instead of simplifying it. Instead of wasting energy on trying to make it hard for you to build cycles into your flow, Coconut Data focusses on giving you powerful tools to avoid having to resort to cycles in the first place.
 
 # Models
 
