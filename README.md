@@ -16,6 +16,7 @@ Models are quite restrictive about what kind of properties they allow. Currently
 - `@:editable` - may be set from outside.
 - `@:computed` - a property computed from the model's state
 - `@:loaded` - not unlike a computed property, but the computation is asynchronous
+- `@:external` - may change over time, but the model itself cannot effect change directly
 
 The first three are physically existent on the model, while the latter two are dependent values. Let's see how we might use them:
 
@@ -98,7 +99,7 @@ This technique may also make sense for directly `@:computed` properties.
 
 ## Observables
 
-You may notice the `observable` field, which exposes one observable per each individual field to allow explicitly dealing with `tink_state` observables. It is absolutely safe to ignore and let coconut implicitly propagate changes through your application. Here is how you could use it by hand though:
+You may have noticed the `observable` field, which exposes one observable per each individual field to allow explicitly dealing with `tink_state` observables. It is absolutely safe to ignore and let coconut implicitly propagate changes through your application. Here is how you could use it by hand though:
 
 ```haxe
 var todo = new TodoItem({ description: 'Hello, World!'});
@@ -147,7 +148,7 @@ class Rates implements coconut.data.Model {
 }
 ```
 
-You may not that in this case we are return the next state directly, which is also possible since promises have an implicit cast from direct values.
+In this case we are returning the state changes directly, which is also possible since promises have an implicit cast from direct values. 
 
 ### When Type Inference Fails
 
