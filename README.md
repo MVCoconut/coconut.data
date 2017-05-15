@@ -46,7 +46,7 @@ class TodoItem implements Model {
 
   public function new(initial:{ description:String, ?created:Date }):Void { /* magic happens here */}
 
-  public var observable(default, never):{
+  public var observables(default, never):{
     var created(default, never):tink.state.Observable<Date>;
     var completed(default, never):tink.state.Observable<Bool>;
     var description(default, never):tink.state.Observable<String>;
