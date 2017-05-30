@@ -306,9 +306,17 @@ class ModelBuilder {
         var name = f.name;
         updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
       }
+      var mutable = TAnonymous([for (f in transitionFields) {//workaround for Haxe issue #6316
+        name: f.name,
+        pos: f.pos,
+        kind: FVar(switch f.kind { case FProp(_, _, t, _): t; default: throw 'assert'; }, null),
+      }]);
 
       add(macro class {
-        @:noCompletion function __cocoupdate(delta:$transitionType) $b{updates};
+        @:noCompletion function __cocoupdate(delta:$transitionType) {
+          var delta:$mutable = cast delta; 
+          $b{updates};
+        }
         public var observables(default, never):$observables;
       });
 
