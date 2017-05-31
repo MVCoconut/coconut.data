@@ -307,6 +307,7 @@ class ModelBuilder {
         updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
       }
       var sparse = TAnonymous([for (f in transitionFields) {//this is a workaround for Haxe issue #6316 and also enables settings fields to null
+        meta: [OPTIONAL],
         name: f.name,
         pos: f.pos,
         kind: FVar(
