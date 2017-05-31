@@ -306,15 +306,25 @@ class ModelBuilder {
         var name = f.name;
         updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
       }
-      var mutable = TAnonymous([for (f in transitionFields) {//workaround for Haxe issue #6316
+      var sparse = TAnonymous([for (f in transitionFields) {//this is a workaround for Haxe issue #6316 and also enables settings fields to null
         name: f.name,
         pos: f.pos,
-        kind: FVar(switch f.kind { case FProp(_, _, t, _): t; default: throw 'assert'; }, null),
+        kind: FVar(
+          switch f.kind { 
+            case FProp(_, _, t, _): macro : tink.core.Ref<$t>; 
+            default: throw 'assert'; 
+          }
+        ),
       }]);
 
       add(macro class {
         @:noCompletion function __cocoupdate(delta:$transitionType) {
-          var delta:$mutable = cast delta; 
+          var sparse = new haxe.DynamicAccess<tink.core.Ref<Any>>(),
+              delta:haxe.DynamicAccess<Any> = cast delta;
+
+          for (k in delta.keys())
+            sparse[k] = tink.core.Ref.to(delta[k]);
+          var delta:$sparse = cast sparse; 
           $b{updates};
         }
         public var observables(default, never):$observables;
