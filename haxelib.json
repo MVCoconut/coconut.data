@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Fix optional args.",
-	"version": "0.4.1",
+	"releasenote": "Resolve nullability issues. Support interfaces. Support python.",
+	"version": "0.5.0",
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"dependencies": {
 		"tink_state": "",
