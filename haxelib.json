@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Resolve nullability issues. Support interfaces. Support python.",
-	"version": "0.5.0",
+	"releasenote": "Improvements to external fields.",
+	"version": "0.5.1",
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"dependencies": {
 		"tink_state": "",
