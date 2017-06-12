@@ -383,7 +383,7 @@ class ModelBuilder {
           case [_, v]: v;
         };
 
-    c.getConstructor().init(state, ctx.pos, Value(macro tink.state.Observable.auto(function ():$comp return ${ctx.expr})));
+    c.getConstructor().init(state, ctx.pos, Value(macro @:pos(ctx.pos) tink.state.Observable.auto(function ():$comp return ${ctx.expr})));
 
     add(macro class {
       @:noCompletion private var $state:tink.state.Observable<$type>;
