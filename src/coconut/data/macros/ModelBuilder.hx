@@ -347,8 +347,8 @@ class ModelBuilder {
     return {
       getter: macro this.$state.value,
       init: switch ctx.expr {
-        case null: Arg(macro : tink.state.Observable<$type>);
-        case macro @byDefault $e: OptArg(e, macro : tink.state.Observable<$type>);
+        case null: Arg(macro : coconut.data.Value<$type>);
+        // case macro @byDefault $e: OptArg(e, macro : coconut.data.Value<$type>);
         case e: e.reject('@:external fields cannot be initialized. Consider using @:constant or @:computed instead');
       },
       type: type,

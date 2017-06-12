@@ -16,7 +16,7 @@ Models are quite restrictive about what kind of properties they allow. Currently
 - `@:editable` - may be set from outside.
 - `@:computed` - a property computed from the model's state
 - `@:loaded` - not unlike a computed property, but the computation is asynchronous
-- `@:external` - may change over time, but the model itself cannot effect change directly
+- `@:external` - the module consumes an `Observable` upon construction and exposes it as if it were its own
 
 The first three are physically existent on the model, while the latter two are dependent values. Let's see how we might use them:
 
@@ -366,3 +366,50 @@ This leaves a couple of type holes. For example `Iterator<Int>` will slip throug
 This is an area deserving of improvement, but without a some help from Haxe itself to determine immutability, very little progress is to be expected. Note thought that in `coconut.ui` a second pass of checks is performed, thus closing *some* of the type holes created by type parameters.
 
 You can always tag a type `@:pure` or `@:observable` to feed data into coconut, that it would not consider acceptable otherwise. You may also add `@:skipCheck` on a model's field to bypass the check. Note that misuse of these features can lead to a situation where state changes are not properly propagated through you application.
+
+# Model Composition
+
+While `coconut.data` currently does not support model inheritance, `@:external` fields provide a very powerful approach to composition.
+
+Imagine this:
+
+```haxe
+class Movement implements Model {
+  
+  @:external var angle:Float;
+  @:external var speed:Float;
+  
+  @:computed var horizontalSpeed:Float = Math.cos(heading) * speed;
+  @:computed var verticalSpeed:Float = Math.sin(heading) * speed;
+
+  @:computed var velocity:Vec2 = new Vec2(horizontalSpeed, verticalSpeed);
+
+}
+```
+
+So this model of movement gives us a couple of properties based on speed and heading. Let's assume we have something that gives us speed and heading:
+
+```haxe
+class Compass implements Model {
+  @:observable var degrees:Float;
+}
+
+class ChipLog implements Model {
+  @:observable var knots:Float;
+}
+```
+
+And let's compose these:
+
+```haxe
+var compass:Compass = ...;
+var log:ChipLog = ...;
+var movement = new Movement({ 
+  heading: compass.degrees / 180 * Math.PI,
+  speed: log.knots * KNOTS_IN_METERS_PER_SECOND,
+});
+```
+
+As we see, we can easily get data from multiple sources, transform it on the fly (degrees to radians and mph to m/s) and compose it into a new model. Notice though that `Movement` does not in any way depend on either a compass or a chip log. If you're not on a boat, you may wish to procure your data by different means.
+
+To explain in a bit more detail what's happening with each of the external fields, let's examine the `heading`. What this does is add a `heading : coconut.data.Value<Float>` to the constructor argument's fields. The `Value<T>` is a helper, that will directly consume any `Observable<T>` but will wrap any other expression in [`Observable.auto`](https://github.com/haxetink/tink_state#automagic-observables). The observable is consumed by the constructor and is directly exposed, making it opaque to the outside world whether the very origin of the data is *within* the model or external to it.

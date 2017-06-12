@@ -10,14 +10,36 @@ import coconut.data.*;
 using tink.CoreApi;
 
 class RunTests {
+  
 
   static function main() {
     run(TestBatch.make([
+      new ExternalTest(),
       new TodoModelTest(),
       new SelectionTest(),
     ])).handle(exit);
   }
   
+}
+
+class ExternalTest {
+  public function new() {}
+  static inline var ONE_MILE_IN_METERS = 1600;//or something
+  @:describe("external")
+  public function external(test:AssertionBuffer) {
+    var compass = new Compass(),
+        speedometer = new Speedometer();
+
+    var movement:Movement = new Movement({ 
+      heading: compass.degrees / 180 * Math.PI,
+      speed: speedometer.mph * ONE_MILE_IN_METERS / 3600,
+    });
+    
+    test.assert(movement.heading == 0);
+    compass.degrees = 90;
+    test.assert(movement.heading == Math.PI / 2);
+    return test.done();
+  }
 }
 
 class SelectionTest {
@@ -227,4 +249,37 @@ class Rates implements coconut.data.Model {
       if (to < luxuryRate || to - luxuryRate < scienceRate) { luxuryRate: to };
       else { luxuryRate: to, taxRate: 100 - to };
   }  
+}
+
+class Ticker {
+  static public function make(rate:Float = 1) {
+    var timer = new haxe.Timer(Std.int(1000 / rate));
+    var ret = new State(0);
+    timer.run = function () ret.set(ret.value + 1);
+    return ret.observe();
+  }
+}
+
+class Movement implements Model {
+  
+  @:external var heading:Float;
+  @:external var speed:Float;
+  
+  @:computed var horizontalSpeed:Float = Math.cos(heading) * speed;
+  @:computed var verticalSpeed:Float = Math.sin(heading) * speed;
+
+  @:computed var velocity:Vec2 = new Vec2(horizontalSpeed, verticalSpeed);
+
+}
+
+@:pure class Vec2 {
+  public function new(x, y) {}
+}
+
+class Compass implements Model {
+  @:editable var degrees:Float = @byDefault .0;
+}
+
+class Speedometer implements Model {
+  @:editable var mph:Float = @byDefault .0;
 }
