@@ -339,7 +339,7 @@ And just like that we've eliminated a transition. Whether or not it's smart to d
 class User implements coconut.data.Model {
   @:constant var store:{ function buy(item:Item):Promise<{ total:Int }> };
   @:observable var balance:Int = 100;
-  public function buy(item:Item)
+  @:transition function buy(item:Item)
     return 
       if (item.price < balance) store.buy(item).next(function (o) return { balance: balance - o.total });
       else {};
@@ -376,7 +376,7 @@ Imagine this:
 ```haxe
 class Movement implements Model {
   
-  @:external var angle:Float;
+  @:external var heading:Float;
   @:external var speed:Float;
   
   @:computed var horizontalSpeed:Float = Math.cos(heading) * speed;
