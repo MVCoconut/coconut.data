@@ -95,9 +95,12 @@ class Models {
 
     return macro @:pos(e.pos) {
       var ret = $e();
-      ret.handle(function (o) switch o {
-        case Success(v): __cocoupdate(v);
-        case _:
+      transitionLink = ret.handle(function (o) {
+        transitionLink = null;
+        switch o {
+          case Success(v): __cocoupdate(v);
+          case Failure(e): errorTrigger.trigger(e);
+        }
       });
       return $ret;
     }

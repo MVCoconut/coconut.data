@@ -295,11 +295,17 @@ class ModelBuilder {
     if (isInterface) 
       add(macro class {
         var observables(default, never):$observables;
+        var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
+        var transitionLink(default, never):tink.core.Callback.CallbackLink;
       });
     else {
       if (cFunc.args[0].opt)
         constr.addStatement(macro if(initial == null) initial = {}, true);
+        
       constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
+      constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
+      constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
+      
       var updates = [];
       
       for (f in transitionFields) {
@@ -329,6 +335,9 @@ class ModelBuilder {
           $b{updates};
         }
         public var observables(default, never):$observables;
+        public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
+        var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
+        public var transitionLink(default, null):tink.core.Callback.CallbackLink;
       });
 
       c.target.meta.add(':final', [], c.target.pos);
