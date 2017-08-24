@@ -292,14 +292,35 @@ class ModelBuilder {
               }
                 
         }
+    
+    
+    // transitionLink    
+    observableFields.push({
+      name: 'isInTransition',
+      pos: Context.currentPos(),
+      kind: FProp('default', 'never', macro : tink.state.Observable<Bool>)
+    });
+    
+    observableInit.push({
+      field: 'isInTransition',
+      expr: macro this.__coco_transitionCount.observe().map(function(c) return c > 0),
+    });
+        
     if (isInterface) 
       add(macro class {
         var observables(default, never):$observables;
+        var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
+        public var isInTransition(get, never):Bool;
       });
     else {
       if (cFunc.args[0].opt)
         constr.addStatement(macro if(initial == null) initial = {}, true);
+        
+      constr.init('__coco_transitionCount', c.target.pos, Value(macro new tink.state.State(0)), {bypass: true});
+      constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
+      constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
       constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
+      
       var updates = [];
       
       for (f in transitionFields) {
@@ -329,6 +350,11 @@ class ModelBuilder {
           $b{updates};
         }
         public var observables(default, never):$observables;
+        public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
+        var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
+        var __coco_transitionCount(default, never):tink.state.State<Int>;
+        public var isInTransition(get, never):Bool;
+        inline function get_isInTransition() return observables.isInTransition.value;
       });
 
       c.target.meta.add(':final', [], c.target.pos);
