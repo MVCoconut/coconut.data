@@ -104,7 +104,14 @@ class Models {
           case Failure(e): errorTrigger.trigger(e);
         }
       });
-      if(!handled) __coco_transitionLink.set(link);
+      if(!handled) {
+        var _link;
+        _link = function() {
+          link.dissolve();
+          if(transitionLink == _link) __coco_transitionLink.set(null);
+        }
+        __coco_transitionLink.set(_link);
+      }
       return $ret;
     }
 

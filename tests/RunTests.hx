@@ -55,6 +55,7 @@ class TransitionTest {
     
     transition.handle(function(_) {
       asserts.assert(model.value == 0);
+      asserts.assert(model.transitionLink == null);
       asserts.done();
     });
     
