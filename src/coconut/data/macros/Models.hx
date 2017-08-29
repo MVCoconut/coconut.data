@@ -19,6 +19,7 @@ class Models {
       switch pack.concat([name]).join('.') {
         case  'Date' | 'Int' | 'String' | 'Bool' | 'Float': true;
         case 'tink.pure.List': true;
+        case 'tink.Url': true;
         default: 
           switch [pack, name] {
             case [['tink', 'core'], 'NamedWith' | 'Pair' | 'Lazy' | 'TypedError' | 'Future' | 'Promise']: true;
