@@ -96,9 +96,13 @@ class Models {
 
     return macro @:pos(e.pos) {
       var ret = $e();
-      ret.handle(function (o) switch o {
-        case Success(v): __cocoupdate(v);
-        case _:
+      __coco_transitionCount.set(__coco_transitionCount.value + 1);
+      ret.handle(function (o) {
+        __coco_transitionCount.set(__coco_transitionCount.value - 1);
+        switch o {
+          case Success(v): __cocoupdate(v);
+          case Failure(e): errorTrigger.trigger(e);
+        }
       });
       return $ret;
     }

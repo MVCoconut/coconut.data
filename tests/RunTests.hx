@@ -2,6 +2,7 @@ package ;
 
 import tink.testrunner.Runner.*;
 import tink.unit.*;
+import tink.unit.Assert.*;
 
 import tink.state.*;
 import tink.state.Promised;
@@ -14,12 +15,40 @@ class RunTests {
 
   static function main() {
     run(TestBatch.make([
+      new TransitionTest(),
       new ExternalTest(),
       new TodoModelTest(),
       new SelectionTest(),
     ])).handle(exit);
   }
   
+}
+
+@:asserts
+class TransitionTest {
+  public function new() {}
+  
+  public function normal() {
+    var model = new TransitionModel();
+    
+    asserts.assert(!model.isInTransition);
+    var transition = model.modify(1);
+    asserts.assert(model.isInTransition);
+    transition.handle(function(_) {
+      asserts.assert(model.value == 1);
+      asserts.assert(!model.isInTransition);
+      asserts.done();
+    });
+    
+    return asserts;
+  }
+  
+  public function error() {
+    var model = new TransitionModel();
+    var errorEmitted = false;
+    model.transitionErrors.handle(function(_) errorEmitted = true);
+    return model.failure().map(function(_) return assert(errorEmitted));
+  }
 }
 
 class ExternalTest {
@@ -282,4 +311,16 @@ class Compass implements Model {
 
 class Speedometer implements Model {
   @:editable var mph:Float = @byDefault .0;
+}
+
+class TransitionModel implements Model {
+  @:observable var value:Int = @byDefault 0;
+  
+  @:transition
+  function modify(v:Int)
+    return Future.async(function(cb) haxe.Timer.delay(cb.bind({value: v}), 10));
+  
+  @:transition
+  function failure()
+    return new Error('Dummy');
 }
