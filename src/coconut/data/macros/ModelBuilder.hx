@@ -292,11 +292,25 @@ class ModelBuilder {
               }
                 
         }
+    
+    
+    // transitionLink    
+    observableFields.push({
+      name: 'transitionLink',
+      pos: Context.currentPos(),
+      kind: FProp('default', 'never', macro : tink.state.Observable<tink.core.Callback.CallbackLink>)
+    });
+    
+    observableInit.push({
+      field: 'transitionLink',
+      expr: macro this.__coco_transitionLink,
+    });
+        
     if (isInterface) 
       add(macro class {
         var observables(default, never):$observables;
         var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
-        var transitionLink(default, never):tink.core.Callback.CallbackLink;
+        var transitionLink(get, never):tink.core.Callback.CallbackLink;
       });
     else {
       if (cFunc.args[0].opt)
@@ -337,7 +351,9 @@ class ModelBuilder {
         public var observables(default, never):$observables;
         public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
         var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
-        public var transitionLink(default, null):tink.core.Callback.CallbackLink;
+        public var transitionLink(get, null):tink.core.Callback.CallbackLink;
+        inline function get_transitionLink() return __coco_transitionLink.value;
+        var __coco_transitionLink(default, never):tink.state.State<tink.core.Callback.CallbackLink> = new tink.state.State(null);
       });
 
       c.target.meta.add(':final', [], c.target.pos);

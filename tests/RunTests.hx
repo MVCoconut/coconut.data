@@ -30,7 +30,21 @@ class TransitionTest {
   
   public function normal() {
     var model = new TransitionModel();
-    return model.modify(1).next(function(_) return assert(model.value == 1));
+    
+    Promise.inParallel([
+      model.modify(1)
+        .next(function(_) {
+          asserts.assert(model.value == 1);
+          return Noise;
+        }),
+      model.observables.transitionLink.nextTime(function(link) return link != null)
+        .next(function(link) {
+          asserts.assert(link != null);
+          return Noise;
+        }),
+    ]).handle(function(_) asserts.done());
+    
+    return asserts;
   }
   
   public function abort() {

@@ -95,13 +95,16 @@ class Models {
 
     return macro @:pos(e.pos) {
       var ret = $e();
-      transitionLink = ret.handle(function (o) {
-        transitionLink = null;
+      var handled = false;
+      var link = ret.handle(function (o) {
+        handled = true;
+        __coco_transitionLink.set(null);
         switch o {
           case Success(v): __cocoupdate(v);
           case Failure(e): errorTrigger.trigger(e);
         }
       });
+      if(!handled) __coco_transitionLink.set(link);
       return $ret;
     }
 
