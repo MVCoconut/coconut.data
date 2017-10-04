@@ -269,8 +269,12 @@ class ModelBuilder {
                       v.reject();
                   }
 
+                var retType = transitionType;
+
                 if (ret == null) 
                   ret = macro null;
+                else
+                  retType = (function () return ret.typeof().sure()).lazyComplex();
 
                 function next(e:Expr) return switch e {
                   case macro @patch $v: macro @:pos(e.pos) ($v : $transitionType);
@@ -280,6 +284,8 @@ class ModelBuilder {
                 f.expr = macro @:pos(f.expr.pos) coconut.data.macros.Models.transition(
                   function ():tink.core.Promise<$transitionType> ${next(f.expr)}, $ret
                 );
+
+                f.ret = macro : tink.core.Promise<$retType>;
 
               default:
             }
