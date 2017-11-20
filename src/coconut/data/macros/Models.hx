@@ -96,14 +96,18 @@ class Models {
 
     return macro @:pos(e.pos) {
       var ret = $e();
-      __coco_transitionCount.set(__coco_transitionCount.value + 1);
+      var sync = true;
+      var done = false;
       ret.handle(function (o) {
-        __coco_transitionCount.set(__coco_transitionCount.value - 1);
+        done = true;
+        if(!sync) __coco_transitionCount.set(__coco_transitionCount.value - 1);
         switch o {
           case Success(v): __cocoupdate(v);
           case Failure(e): errorTrigger.trigger(e);
         }
       });
+      if(!done) sync = false;
+      if(!sync) __coco_transitionCount.set(__coco_transitionCount.value + 1);
       return $ret;
     }
 
