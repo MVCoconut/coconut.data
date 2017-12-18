@@ -20,23 +20,21 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> {
         case { expr: TConst(_) }:
           macro @:pos(e.pos) tink.state.Observable.const($e);
         case { t: type }:
+          var expected = switch getExpectedType().reduce() {
+            case TAbstract(_.get().module => 'coconut.data.Value', [_.toComplex() => e]): e;
+            case v: throw 'assert: $v';
+          }
           if (unify(type, getType('tink.state.Observable.ObservableObject'))) {
-            
             var found = typeof(macro @:pos(e.pos) {
               function get<T>(o:tink.state.Observable<T>) return o.value;
               get($e);
             }).toComplex();
-            switch getExpectedType().reduce() {
-              case TAbstract(_.get().module => 'coconut.data.Value', [_.toComplex() => expected]):
-                typeof(macro @:pos(e.pos) ((cast null : $found) : $expected));
-                macro @:pos(e.pos) ($e : tink.state.Observable<$found>).map(function (x):$expected return x);
-              case v: 
-                throw 'assert: $v';
-            }
+            typeof(macro @:pos(e.pos) ((cast null : $found) : $expected));
+            macro @:pos(e.pos) ($e : tink.state.Observable<$found>).map(function (x):$expected return x);
           }
             // e.reject('${type.toString()} should be ${getExpectedType().toString()}')
           else
-            macro @:pos(e.pos) tink.state.Observable.auto(function () return $e);
+            macro @:pos(e.pos) tink.state.Observable.auto(function ():$expected return $e);
       }
   }
 }
