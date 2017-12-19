@@ -32,9 +32,16 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> {
             typeof(macro @:pos(e.pos) ((cast null : $found) : $expected));
             macro @:pos(e.pos) ($e : tink.state.Observable<$found>).map(function (x):$expected return x);
           }
-            // e.reject('${type.toString()} should be ${getExpectedType().toString()}')
-          else
-            macro @:pos(e.pos) tink.state.Observable.auto(function ():$expected return $e);
+          else {
+            function mk(e, t)
+              return macro @:pos(e.pos) tink.state.Observable.auto(function ():$t return $e);
+            switch expected {
+              case macro : tink.state.Observable.Observable<$t>: //throw t;
+                macro @:pos(e.pos) (${mk(e, t)}:tink.state.Observable<$expected>);
+              default:
+                mk(e, expected);
+            }
+          }
       }
   }
 }
