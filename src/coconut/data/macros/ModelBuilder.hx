@@ -75,7 +75,8 @@ class ModelBuilder {
 
     var argType = TAnonymous(argFields),
         transitionType = TAnonymous(transitionFields),
-        observables = TAnonymous(observableFields);
+        observables = TAnonymous(observableFields),
+        observablesObj = EObjectDecl(observableInit).at();
 
     var cFunc = (macro function (?initial:$argType) {
     }).getFunction().sure();
@@ -325,7 +326,7 @@ class ModelBuilder {
       constr.init('__coco_transitionCount', c.target.pos, Value(macro new tink.state.State(0)), {bypass: true});
       constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
       constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
-      constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
+      constr.init('observables', c.target.pos, Value(macro ($observablesObj : $observables)), { bypass: true });
       
       var updates = [];
       
