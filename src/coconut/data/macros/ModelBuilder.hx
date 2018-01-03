@@ -65,8 +65,31 @@ class ModelBuilder {
       if (!c.target.meta.has(':tink'))
         c.target.meta.add(':tink', [], c.target.pos);
     
-    if (c.hasConstructor())
-      c.getConstructor().toHaxe().pos.error('Custom constructors not allowed in models');
+    var publishConstructor = true;
+    var postConstruct = {
+      var ctor:Member = null,
+          a = @:privateAccess c.initializeFrom;
+
+      for (f in a)
+        if (f.name == 'new') {
+          ctor = f;
+          break;
+        }
+
+      if (ctor != null) {
+        publishConstructor = ctor.isPublic;
+        a.remove(ctor);
+        var f = ctor.getFunction().sure();
+        if (f.args.length > 0)
+          ctor.pos.error('constructor must not have arguments');
+        
+        macro @:pos(f.expr.pos) tink.state.Observable.untracked(function () {
+          ${f.expr};
+          return tink.core.Noise.Noise;
+        });
+      }
+      else macro {};
+    }
 
     var argFields = [],
         transitionFields = [],
@@ -84,7 +107,7 @@ class ModelBuilder {
     var constr = 
       if (!isInterface) {
         var c = c.getConstructor(cFunc);
-        c.publish();
+        if (publishConstructor) c.publish();
         c;
       }
       else null;
@@ -327,7 +350,7 @@ class ModelBuilder {
       constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
       constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
       constr.init('observables', c.target.pos, Value(macro ($observablesObj : $observables)), { bypass: true });
-      
+      constr.addStatement(postConstruct);
       var updates = [];
       
       for (f in transitionFields) {
