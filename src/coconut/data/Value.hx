@@ -10,8 +10,8 @@ using tink.MacroApi;
 
 @:forward
 abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> {
-  public inline function or(constant:T):Observable<T>
-    return if (this == null) constant else this;
+  public inline function or(fallback:Value<T>):Observable<T>
+    return if (this == null) fallback else this;
 
   @:from macro static function lift(e) {
     //TODO: be a bit smarter about detecting constants and also make sure literal `null` is handled properly

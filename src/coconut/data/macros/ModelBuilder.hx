@@ -221,7 +221,7 @@ class ModelBuilder {
                   expr: 
                     switch stateOf(name) {
                       case obs if (c.hasMember(obs)): macro this.$obs;
-                      default: macro this.$name;
+                      default: macro tink.state.Observable.const(this.$name);
                     }
                 });
               }
