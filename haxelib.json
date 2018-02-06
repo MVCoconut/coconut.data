@@ -1,6 +1,17 @@
 {
 	"name": "coconut.data",
-	"license": "MIT",
+	"classPath": "src",
+	"dependencies": {
+		"tink_lang": "",
+		"tink_pure": "",
+		"tink_state": ""
+	},
+	"url": "https://github.com/MVCoconut/coconut.data/",
+	"contributors": [
+		"back2dos"
+	],
+	"version": "0.6.0",
+	"releasenote": "Improvements for coconut.data.Value, allow for (limited) constructors, various other tweaks.",
 	"tags": [
 		"data",
 		"state",
@@ -9,16 +20,5 @@
 		"reactive",
 		"observable"
 	],
-	"classPath": "src",
-	"contributors": [
-		"back2dos"
-	],
-	"releasenote": "Add isInTransition. Fix type inference related issues.",
-	"version": "0.5.2",
-	"url": "https://github.com/MVCoconut/coconut.data/",
-	"dependencies": {
-		"tink_state": "",
-		"tink_lang": "",
-		"tink_pure": ""
-	}
+	"license": "MIT"
 }
