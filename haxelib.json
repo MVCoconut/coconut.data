@@ -10,8 +10,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"version": "0.6.0",
-	"releasenote": "Improvements for coconut.data.Value, allow for (limited) constructors, various other tweaks.",
+	"version": "0.6.1",
+	"releasenote": "Disallow transitions in the absence of observable fields.",
 	"tags": [
 		"data",
 		"state",
