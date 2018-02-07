@@ -273,12 +273,19 @@ class ModelBuilder {
                 m.pos.error('@:transition not allowed on fields');
               default:
             }
+          default:
+        }
 
+    for (member in c) 
+      if (!member.isStatic)
+        switch member.kind {
+          default:        
           case FFun(f):
 
             switch member.extractMeta(':transition') {
-              case Success({ params: params }):
-                
+              case Success({ params: params, pos: pos }):
+                if (transitionFields.length == 0)
+                  pos.error('Cannot have transitions when there are no @:observable fields');
                 member.publish();
 
                 var ret = null;
