@@ -1,5 +1,7 @@
 # Coconut Data
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/MVCoconut/Lobby)
+
 This library is the meat of the coconut, so to speak. It allows you to model your domain and application state based on the following principles:
 
 1. **All state changes MUST BE observable**. This is achieved by making all data either constant or observable. We'll talk about that [towards the end](#enforced-observability).
