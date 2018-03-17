@@ -36,7 +36,8 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> {
             function mk(e, t)
               return macro @:pos(e.pos) tink.state.Observable.auto(function ():$t return $e);
             switch expected {
-              case macro : tink.state.Observable.Observable<$t>:
+              case (macro : tink.state.Observable.Observable<$t>), //TODO: this case is only here for tink_macro <= 0.16.3 versions
+                (macro : tink.state.Observable<$t>):
                 macro @:pos(e.pos) (${mk(e, t)}:tink.state.Observable<$expected>);
               default:
                 mk(e, expected);
