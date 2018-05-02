@@ -148,6 +148,8 @@ class TodoModelTest {
     p = { taxRate: 50 };
     p = { luxuryRate: 50 };
     p = { luxuryRate: 50, taxRate: 50 };
+    var o:ObservablesOf<Rates> = rates.observables;
+    o.taxRate.bind({ direct: true }, function (t) test.assert(rates.taxRate == t));
     function checksum()
       test.assert(rates.taxRate + rates.luxuryRate + rates.scienceRate == 100);
 

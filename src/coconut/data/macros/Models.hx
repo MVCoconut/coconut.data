@@ -14,6 +14,16 @@ class Models {
   static public function build() 
     return ClassBuilder.run([function (c) new ModelBuilder(c)]);
 
+  static function getObservables()
+    return 
+      switch Context.getLocalType() {
+        case TInst(_.get() => cl, [_.toComplex() => ct]):
+
+          (macro (null : $ct).observables).typeof().sure();
+
+        default: throw 'assert';
+      }    
+
   static function getPatch() 
     return 
       switch Context.getLocalType() {
