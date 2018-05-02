@@ -144,7 +144,10 @@ class TodoModelTest {
   @:describe("@:transition") 
   public function testTransitions(test:AssertionBuffer) {
     var rates = new Rates();
-
+    var p:Patch<Rates> = {};
+    p = { taxRate: 50 };
+    p = { luxuryRate: 50 };
+    p = { luxuryRate: 50, taxRate: 50 };
     function checksum()
       test.assert(rates.taxRate + rates.luxuryRate + rates.scienceRate == 100);
 

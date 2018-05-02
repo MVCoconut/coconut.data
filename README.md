@@ -186,6 +186,15 @@ Let's set aside the fact that this is pretty non-sensical of course. The most im
 }
 ```
 
+In addition to that, there's a special `@:genericBuild` type, that will give you the patch type for a given coconut model:
+
+```haxe
+var p:Patch<Rates> = {};
+$type(p);//{ ?taxRate : Null<Int>, ?luxuryRate : Null<Int> }
+```
+
+You can use that if you're in need for an explicit type.
+
 ### Returning Values
 
 By default a transition will simply return the changes it made. You may however put a return statement into its metadata to return a value computed based on the final state after the transition.
