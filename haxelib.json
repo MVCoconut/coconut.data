@@ -1,17 +1,6 @@
 {
 	"name": "coconut.data",
-	"classPath": "src",
-	"dependencies": {
-		"tink_lang": "",
-		"tink_pure": "",
-		"tink_state": ""
-	},
-	"url": "https://github.com/MVCoconut/coconut.data/",
-	"contributors": [
-		"back2dos"
-	],
-	"version": "0.6.1",
-	"releasenote": "Disallow transitions in the absence of observable fields.",
+	"license": "MIT",
 	"tags": [
 		"data",
 		"state",
@@ -20,5 +9,16 @@
 		"reactive",
 		"observable"
 	],
-	"license": "MIT"
+	"classPath": "src",
+	"contributors": [
+		"back2dos"
+	],
+	"releasenote": "Add ObservablesOf and Patch.",
+	"version": "0.6.2",
+	"url": "https://github.com/MVCoconut/coconut.data/",
+	"dependencies": {
+		"tink_state": "",
+		"tink_lang": "",
+		"tink_pure": ""
+	}
 }
