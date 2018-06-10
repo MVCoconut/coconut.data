@@ -302,7 +302,7 @@ class ModelBuilder {
                   }
 
                 if (ret == null)
-                  ret = macro return tink.core.Noise.Noise;
+                  ret = macro return (Noise:tink.core.Noise);
 
                 var retType = transitionType;
 
