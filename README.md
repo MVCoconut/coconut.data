@@ -197,7 +197,7 @@ You can use that if you're in need for an explicit type.
 
 ### Returning Values
 
-By default a transition will simply return the changes it made. You may however put a return statement into its metadata to return a value computed based on the final state after the transition.
+By default a transition will simply return `Promise<Noise>`. You may however put a return statement into its metadata to return a value computed based on the final state after the transition.
 
 ```haxe
 @:transition(return taxRate) 
@@ -213,7 +213,7 @@ function setTaxRate(to:Int) {
 }
 ```
 
-Technically you can do things like `@:transition(return Date.now().getTime())` but it's needless to say that you should use this feature to yield information that is useful to the caller.
+Technically you can do things like `@:transition(return Date.now().getTime())` but it's needless to say that you should use this feature to yield information that is useful to the caller. The return type is always a promise, even if your transition happens to be synchronous.
 
 ### Synchronization
 

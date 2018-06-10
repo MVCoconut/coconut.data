@@ -289,6 +289,7 @@ class ModelBuilder {
                 member.publish();
 
                 var ret = null;
+
                 for (v in params)
                   switch v {
                     case macro return $e: 
@@ -299,6 +300,9 @@ class ModelBuilder {
                     default:
                       v.reject();
                   }
+
+                if (ret == null)
+                  ret = macro return tink.core.Noise.Noise;
 
                 var retType = transitionType;
 
