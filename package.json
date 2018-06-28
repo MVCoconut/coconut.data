@@ -3,12 +3,11 @@
   "version": "0.0.0",
   "description": "",
   "scripts": {
-	"travix": "haxe -lib travix --run travix.Travix",
+    "travix": "haxe -lib travix --run travix.Travix",
     "haxelib": "haxelib",
     "postinstall": "lix download"
   },
   "dependencies": {
-    "haxeshim": "0.8.0",
-    "lix.pm": "*"
+    "lix": "=15.3.0-alpha.1"
   }
 }

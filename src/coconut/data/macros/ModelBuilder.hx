@@ -194,9 +194,10 @@ class ModelBuilder {
                     var st = 
                       if (external)
                         macro : tink.state.Observable<$t> 
-                      else 
+                      else {
+                        e = macro @:pos(e.pos) new tink.state.State($e);
                         macro : tink.state.State<$t>;
-
+                      }
                     add(macro class {
                       @:noCompletion private var $state:$st;
                     });
