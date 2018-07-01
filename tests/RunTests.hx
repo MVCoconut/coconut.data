@@ -20,6 +20,9 @@ class RunTests {
       new TodoModelTest(),
       new SelectionTest(),
     ])).handle(exit);
+    var a:InitialArgs<TransitionModel> = {};
+    a = { value: 12 };
+    a = {};
   }
   
 }

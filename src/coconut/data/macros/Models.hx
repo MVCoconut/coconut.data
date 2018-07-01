@@ -14,10 +14,24 @@ class Models {
   static public function build() 
     return ClassBuilder.run([function (c) new ModelBuilder(c)]);
 
+  static function getInitialArgs()
+    return 
+      switch Context.getLocalType() {
+        case TInst(_, [TInst(_.get() => cl, params)]):
+          
+          switch cl.constructor.get().type.applyTypeParameters(cl.params, params) {
+            case TFun([arg], _): arg.t;
+            default: throw 'assert';
+          }
+
+        default: throw 'assert';
+      }    
+
+
   static function getObservables()
     return 
       switch Context.getLocalType() {
-        case TInst(_.get() => cl, [_.toComplex() => ct]):
+        case TInst(_, [_.toComplex() => ct]):
 
           (macro (null : $ct).observables).typeof().sure();
 
