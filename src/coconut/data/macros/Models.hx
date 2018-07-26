@@ -12,7 +12,7 @@ class Models {
   #if macro 
 
   static public function build() 
-    return ClassBuilder.run([function (c) new ModelBuilder(c)]);
+    return ModelBuilder.build();
 
   static function getInitialArgs()
     return 
@@ -127,33 +127,5 @@ class Models {
         case v:
           [t.toString() + ' is not acceptable coconut data'];
       }
-
-  static public function buildTransition(e:Expr, ret:Expr) { 
-    
-    var ret = switch ret {
-      case null | macro null: macro ret;
-      case v: macro ret.next(function (_) return $v);
-    }
-
-    return macro @:pos(e.pos) {
-      var ret = $e();
-      var sync = true;
-      var done = false;
-      ret.handle(function (o) {
-        done = true;
-        if(!sync) __coco_transitionCount.set(__coco_transitionCount.value - 1);
-        switch o {
-          case Success(v): __cocoupdate(v);
-          case Failure(e): errorTrigger.trigger(e);
-        }
-      });
-      if(!done) sync = false;
-      if(!sync) __coco_transitionCount.set(__coco_transitionCount.value + 1);
-      return $ret;
-    }
-
-  }
   #end
-  macro static public function transition(e, ?ret) 
-    return buildTransition(e, ret);
 }

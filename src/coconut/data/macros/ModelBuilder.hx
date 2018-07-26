@@ -9,488 +9,321 @@ import haxe.macro.Expr;
 using tink.MacroApi;
 using tink.CoreApi;
 
-private typedef FieldContext = {
-  var name(default, null):String;
-  var pos(default, null):Position;
-  var type(default, null):ComplexType;
-  var expr(default, null):Null<Expr>;
-  var meta(default, null):MetadataEntry;
-}
-
-private enum Init {
-  Skip;
-  Value(e:Expr);
-  Arg(?type:ComplexType);
-  OptArg(defaultsTo:Expr, ?type:ComplexType);
-}
-
-private typedef Result = {
-  var getter(default, null):Expr;
-  @:optional var setter(default, null):Expr;
-  @:optional var stateful(default, null):Bool;
-  @:optional var transitionable(default, null):Bool;
-  @:optional var type(default, null):ComplexType;
-  var init(default, null):Init;
+@:enum abstract Kind(String) from String to String {
+  var KObservable = ':observable';
+  var KConstant = ':constant';
+  var KEditable = ':editable';
+  var KExternal = ':external';
+  var KComputed = ':computed';
+  var KLoaded = ':loaded';
 }
 
 class ModelBuilder {
 
-  var fieldDirectives:Array<Named<FieldContext->Result>>;
-
   var c:ClassBuilder;
   var isInterface:Bool;
 
-  public function new(c) {
+  var argFields:Array<Field> = [];
+  var argsOptional:Bool = true;
+  var patchFields:Array<Field> = [];
+  var observableFields:Array<Field> = [];
+  var observableInit:Array<ObjectField> = [];
+  var init:Array<Expr> = [];
 
-    //TODO: refactor this horrible piece of crap
+  var patchType:ComplexType;
 
+  static var OPTIONAL = [{ name: ':optional', pos: (macro null).pos, params: [] }];
+  static var NOMETA = OPTIONAL.slice(OPTIONAL.length);
+  static inline var TRANSITION = ':transition';
+
+  public function new(c, ctor:Option<Function>) {
+    //TODO: put `observables` into a class if `!isInterface`
     this.c = c;
-
     this.isInterface = c.target.isInterface;
-    
-    var OPTIONAL = [{ name: ':optional', params: [], pos: c.target.pos }];
 
-    fieldDirectives = [
-      new Named(':constant'  , constantField),
-      new Named(':external'  , externalField),
-      new Named(':computed'  , computedField.bind(_, false)),
-      new Named(':loaded'    , computedField.bind(_, true)), 
-      new Named(':editable'  , observableField.bind(_, true)),
-      new Named(':observable', observableField.bind(_, false)),
-    ];
-
-    if (isInterface)
-      fieldDirectives = fieldDirectives.filter(function (n) return n.name != ':loaded');
-    else
-      if (!c.target.meta.has(':tink'))
-        c.target.meta.add(':tink', [], c.target.pos);
-    
-    var publishConstructor = true;
-    var postConstruct = {
-      var ctor:Member = null,
-          a = @:privateAccess c.initializeFrom;
-
-      for (f in a)
-        if (f.name == 'new') {
-          ctor = f;
-          break;
-        }
-
-      if (ctor != null) {
-        publishConstructor = ctor.isPublic;
-        a.remove(ctor);
-        var f = ctor.getFunction().sure();
-        if (f.args.length > 0)
-          ctor.pos.error('constructor must not have arguments');
-        
-        macro @:pos(f.expr.pos) tink.state.Observable.untracked(function () {
-          ${f.expr};
-          return tink.core.Noise.Noise;
-        });
-      }
-      else macro {};
-    }
-
-    var argFields = [],
-        transitionFields = [],
-        observableFields = [],
-        observableInit = [];
-
-    var argType = TAnonymous(argFields),
-        transitionType = TAnonymous(transitionFields),
-        observables = TAnonymous(observableFields),
-        observablesObj = EObjectDecl(observableInit).at();
-
-    var cFunc = (macro function (?initial:$argType) {
-    }).getFunction().sure();
-
-    var constr = 
-      if (!isInterface) {
-        var c = c.getConstructor(cFunc);
-        if (publishConstructor) c.publish();
-        c;
-      }
-      else null;
-
-    for (member in c) 
-      if (!member.isStatic)
-        switch member.kind {
+    for (f in c)
+      if (!f.isStatic)
+        switch f.kind {
           case FProp(_, _, _, _): 
-          
-            member.pos.error('Custom properties not allowed in models');
-
+            f.pos.error('Custom properties not allowed in models');
           case FVar(t, e):
-
-            if (t == null) 
-              member.pos.error('Field requires explicit type');
-            
-            var found = None;
-
-            function addResult(res:Result, external:Bool) {
-              var name = member.name;
-
-              var finalType = switch res.type {
-                case null: t;
-                case v: v;
-              }
-
-              if (res.getter != null)
-                c.addMember(Member.getter(name, res.getter, finalType));
-
-              var setter = 
-                switch res.setter {
-                  case null:
-                    'never';
-                  case v:
-                    c.addMember(Member.setter(name, v, finalType));
-                    'set';
-                }
-
-              member.kind = FProp('get', setter, finalType, null);
-              member.publish();
-
-              function addArg(?meta, ?type)
-                argFields.push({
-                  name: name,
-                  pos: member.pos,
-                  meta: meta,
-                  kind: FProp('default', 'null', if (type == null) t else type),
-                });
-
-              function getValue() 
-                return switch res.init {
-                  case Value(e): macro @:pos(e.pos) ($e : $t);
-                  case Arg(type): 
-                    cFunc.args[0].opt = false;
-                    addArg(type);
-                    macro initial.$name;
-
-                  case OptArg(e, type):
-                    
-                    addArg(OPTIONAL, type);
-                    macro switch initial.$name {
-                      case null: @:pos(e.pos) ($e : $t);
-                      case v: v;
-                    }
-
-                  case Skip: 
-                    null;
-                }
-
-              if (res.stateful) {
-                if (res.transitionable)
-                  transitionFields.push({
-                    name: name,
-                    pos: member.pos,
-                    kind: FProp('default', 'never', t),
-                    meta: OPTIONAL,
-                  });
-
-                switch getValue() {
-                  case null:
-                    throw "assert";
-                  case e: 
-                    var state = stateOf(name);
-                    var st = 
-                      if (external)
-                        macro : tink.state.Observable<$t> 
-                      else {
-                        e = macro @:pos(e.pos) new tink.state.State($e);
-                        macro : tink.state.State<$t>;
-                      }
-                    add(macro class {
-                      @:noCompletion private var $state:$st;
-                    });
-                    constr.init(state, e.pos, Value(e));
-                }
-              }
-              else switch getValue() {
-                case null:
-                case v:
-                  constr.init(name, member.pos, Value(v), { bypass: true });
-              }  
-
-              if (member.isPublic) {
-                observableFields.push({
-                  name: name,
-                  pos: member.pos,
-                  kind: FProp('default', 'never', macro : tink.state.Observable<$finalType>)
-                });                
-
-                observableInit.push({
-                  field: name,
-                  expr: 
-                    switch stateOf(name) {
-                      case obs if (c.hasMember(obs)): macro this.$obs;
-                      default: macro tink.state.Observable.const(this.$name);
-                    }
-                });
-              }
-            }
-
-            for (directive in fieldDirectives) 
-              found = 
-                switch [found, member.extractMeta(directive.name)] {
-                  case [None, Success(m)]: Some({ apply: directive.value, meta: m });
-                  case [Some({ meta: { name: previous } }), Success({ pos: pos, name: conflicting })]:
-                    pos.error('Conflicting directives @:$previous and @:$conflicting');
-                  case [v, _]: v;
-                }
-
-            if (!member.extractMeta(':skipCheck').isSuccess())
-              switch Models.check(member.pos.getOutcome(t.toType())) {
-                case []:
-                case v: member.pos.error(v[0]);
-              }
-
-            switch found {
-              case None: 
-                if (isInterface) {
-                  addResult({ 
-                    init: Skip, 
-                    getter: null, 
-                    type: if (member.extractMeta(':loaded').isSuccess()) macro : tink.state.Promised<$t> else null,
-                  }, false);
-                }
-                else
-                  member.pos.error('Plain fields not allowed on models');
-              case Some(v):
-
-                if (isInterface)
-                  v.meta.pos.error('Directives other than `@:loaded` not allowed on interface fields');
-
-                addResult(v.apply({
-                  name: member.name,
-                  type: t,
-                  expr: e,
-                  pos: member.pos,
-                  meta: v.meta,
-                }), v.meta.name == ':external');
-
-            }
-
-            switch member.extractMeta(':transition') {
-              case Success(m):
-                m.pos.error('@:transition not allowed on fields');
-              default:
-            }
+            addField(f, t, e);
           default:
         }
 
-    for (member in c) 
-      if (!member.isStatic)
-        switch member.kind {
-          default:        
-          case FFun(f):
+    this.patchType = TAnonymous(patchFields);
 
-            switch member.extractMeta(':transition') {
-              case Success({ params: params, pos: pos }):
-                if (transitionFields.length == 0)
-                  pos.error('Cannot have transitions when there are no @:observable fields');
-                member.publish();
+    for (f in c)
+      if (!f.isStatic)
+        switch f.kind {
+          case FFun(func):
+            addMethod(f, func);
+          default:
+        }      
 
-                var ret = null;
+    addBoilerPlate();
 
-                for (v in params)
-                  switch v {
-                    case macro return $e: 
-                      if (ret == null)
-                        ret = e;
-                      else
-                        v.reject('Only one return clause allowed');
-                    default:
-                      v.reject();
-                  }
+    var f:Function = {
+      args: [],
+      ret: macro : Void,
+      expr: macro {},
+    };
 
-                if (ret == null)
-                  ret = macro return (Noise:tink.core.Noise);
+    if (argFields.length > 0)
+      f.args.push({
+        name: 'init',
+        type: TAnonymous(argFields),
+        opt: argsOptional
+      });  
 
-                var retType = transitionType;
-
-                if (ret == null) 
-                  ret = macro null;
-                else
-                  retType = (function () return ret.typeof().sure()).lazyComplex();
-
-                function next(e:Expr) return switch e {
-                  case macro @patch $v: macro @:pos(e.pos) ($v : $transitionType);
-                  default: e.map(next);
-                }
-
-                f.expr = macro @:pos(f.expr.pos) coconut.data.macros.Models.transition(
-                  function ():tink.core.Promise<$transitionType> ${next(f.expr)}, $ret
-                );
-
-                f.ret = macro : tink.core.Promise<$retType>;
-
-              default:
-            }
-
-            for (d in fieldDirectives)
-              switch member.extractMeta(d.name) {
-                case Success({ pos: p, name: n }):
-                  p.error('@:$n not allowed on functions');
-                default:
-              }
-                
-        }
-    
-    
-    // transitionLink    
-    observableFields.push({
-      name: 'isInTransition',
-      pos: Context.currentPos(),
-      kind: FProp('default', 'never', macro : tink.state.Observable<Bool>)
-    });
-    
-    observableInit.push({
-      field: 'isInTransition',
-      expr: macro this.__coco_transitionCount.observe().map(function(c) return c > 0),
-    });
-        
-    if (isInterface) 
-      add(macro class {
-        var observables(default, never):$observables;
-        var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
-        public var isInTransition(get, never):Bool;
-      });
-    else {
-      if (cFunc.args[0].opt)
-        constr.addStatement(macro if(initial == null) initial = {}, true);
-        
-      constr.init('__coco_transitionCount', c.target.pos, Value(macro new tink.state.State(0)), {bypass: true});
-      constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
-      constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
-      constr.init('observables', c.target.pos, Value(macro ($observablesObj : $observables)), { bypass: true });
-      constr.addStatement(postConstruct);
-      var updates = [];
-      
-      for (f in transitionFields) {
-        var name = f.name;
-        updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
-      }
-      var sparse = TAnonymous([for (f in transitionFields) {//this is a workaround for Haxe issue #6316 and also enables settings fields to null
-        meta: OPTIONAL,
-        name: f.name,
-        pos: f.pos,
-        kind: FVar(
-          switch f.kind { 
-            case FProp(_, _, t, _): macro : tink.core.Ref<$t>; 
-            default: throw 'assert'; 
-          }
-        ),
-      }]);
-
-      add(macro class {
-        @:noCompletion function __cocoupdate(delta:$transitionType) {
-          var sparse = new haxe.DynamicAccess<tink.core.Ref<Any>>(),
-              delta:haxe.DynamicAccess<Any> = cast delta;
-
-          for (k in delta.keys())
-            sparse[k] = tink.core.Ref.to(delta[k]);
-          var delta:$sparse = cast sparse; 
-          $b{updates};
-        }
-        public var observables(default, never):$observables;
-        public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
-        var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
-        var __coco_transitionCount(default, never):tink.state.State<Int>;
-        public var isInTransition(get, never):Bool;
-        inline function get_isInTransition() return observables.isInTransition.value;
-      });
-
-      c.target.meta.add(':final', [], c.target.pos);
-    }
+    c.getConstructor(f).publish();
   }
-  static public function stateOf(name:String)
+
+  function addBoilerPlate() {
+    
+    var updates = [];
+    
+    for (f in patchFields) {
+      var name = f.name;
+      updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
+    }
+
+    var sparse = TAnonymous([for (f in patchFields) {//this is a workaround for Haxe issue #6316 and also enables settings fields to null
+      meta: OPTIONAL,
+      name: f.name,
+      pos: f.pos,
+      kind: FVar(
+        switch f.kind { 
+          case FProp(_, _, t, _): macro : tink.core.Ref<$t>; 
+          default: throw 'assert'; 
+        }
+      ),
+    }]);
+
+    var observables = TAnonymous(observableFields);
+
+    c.addMembers(macro class {
+      @:noCompletion function __cocoupdate(ret:tink.core.Promise<$patchType>) {
+        var sync = true;
+        var done = false;
+        ret.handle(function (o) {
+          done = true;
+          if(!sync) __coco_transitionCount.set(__coco_transitionCount.value - 1);
+          switch o {
+            case Success(delta): 
+              var sparse = new haxe.DynamicAccess<tink.core.Ref<Any>>(),
+                  delta:haxe.DynamicAccess<Any> = cast delta;
+
+              for (k in delta.keys())
+                sparse[k] = tink.core.Ref.to(delta[k]);
+              var delta:$sparse = cast sparse; 
+              $b{updates};
+            case Failure(e): errorTrigger.trigger(e);
+          }
+        });
+        if(!done) sync = false;
+        if(!sync) __coco_transitionCount.set(__coco_transitionCount.value + 1);
+        return ret;
+      }
+      public var observables(default, never):$observables;
+      public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
+      var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
+      var __coco_transitionCount(default, never):tink.state.State<Int>;
+      public var isInTransition(get, never):Bool;
+      inline function get_isInTransition() return __coco_transitionCount.value > 0;
+    });    
+  }
+
+  static function stateOf(name:String)
     return '__coco_$name';
 
-  function add(td:TypeDefinition)
-    for (f in td.fields)
-      c.addMember(f);  
+  function addMethod(f:Member, func:Function)
+    switch f.meta {
+      case []:
 
-  function externalField(ctx:FieldContext):Result {
-    var state = stateOf(ctx.name),
-        type = ctx.type;
-    return {
-      getter: macro this.$state.value,
-      init: switch ctx.expr {
-        case null: Arg(macro : coconut.data.Value<$type>);
-        // case macro @byDefault $e: OptArg(e, macro : coconut.data.Value<$type>);
-        case e: e.reject('@:external fields cannot be initialized. Consider using @:constant or @:computed instead');
-      },
-      type: type,
-      stateful: true,      
+      case [{ name: TRANSITION, params: params, pos: pos }]:
+
+        if (patchFields.length == 0)
+          pos.error('Cannot have transitions when there are no @:observable fields');
+
+        f.publish();
+        
+        var ret = macro (Noise: tink.core.Noise);
+
+        for (p in params)
+          switch p {
+            case macro return $e: ret = e;
+            case macro synchronize: p.reject('synchronization not yet implemented');
+            case macro synchronize = $_: p.reject('synchronization not yet implemented');
+            default: p.reject('This expression is not allowed here');
+          }          
+
+        var body = switch func.expr {
+          case null: pos.error('function body required');
+          case e: e.transform(function (e) return switch e {
+            case macro @patch $v: macro @:pos(v.pos) ($v : $patchType);
+            default: e;
+          });
+        }
+
+        func.expr = macro @:pos(func.expr.pos) 
+          return 
+            __cocoupdate((function ():tink.core.Promise<$patchType> $body)())
+            .next(function (_) return $ret);
+
+      default:
+        switch f.metaNamed(TRANSITION) {
+          case [] | [_]:
+          case v: v[1].pos.error('Can only have one @$TRANSITION per function');
+        }
+
+        for (m in f.meta)
+          if (m.name != TRANSITION)
+            m.pos.error('Tag ${m.name} not allowed');//This is perhaps not the best choice
     }
-  }
 
-  function constantField(ctx:FieldContext):Result {
-    var name = ctx.name;
-    
-    return {
-      getter: macro @:pos(ctx.pos) this.$name,
-      init: switch ctx.expr {
-        case null: Arg();
-        case macro @byDefault $v: OptArg(v);
-        case v: Value(v);
-      },
+  function addField(f:Member, t:ComplexType, e:Expr) {
+    if (t == null) 
+      f.pos.error('Field requires explicit type');
+
+    if (isInterface && e != null)
+      e.reject('expression not allowed here in interfaces');
+
+    var kind = {
+      var info = fieldInfo(f);
+
+      if (!info.skipCheck)
+        switch Models.check(f.pos.getOutcome(t.toType())) {
+          case []:
+          case v: f.pos.error(v[0]);
+        }
+
+      info.kind;
     }
-  }
 
-  function computedField(ctx:FieldContext, async:Bool):Result {
-    
-    var state = stateOf(ctx.name),
-        type = switch [async, ctx.type] {
-          case [true, v]:
-            macro : tink.state.Promised<$v>;
-          case [_, v]: v;
-        },
-        comp = switch [async, ctx.type] {
-          case [true, v]:
-            macro : tink.core.Promise<$v>;
-          case [_, v]: v;
-        };
+    f.publish();
+    f.kind = FVar(if (kind == KLoaded) macro : tink.state.Promised<$t> else t);
 
-    c.getConstructor().init(
-      state, 
-      ctx.pos, 
-      Value(macro @:pos(ctx.pos) tink.state.Observable.auto(
-        (function ():$comp return ${ctx.expr}:tink.state.Observable.Computation<$type>)
-      ))
+    function mk(t:ComplexType, ?optional:Bool):Field
+      return {
+        name: f.name,
+        pos: f.pos,
+        meta: if (optional) OPTIONAL else NOMETA,
+        kind: FProp('default', 'never', t)
+      };
+
+    function addArg(optional:Bool) {
+      argFields.push(
+        mk(if (kind == KExternal) macro : coconut.data.Value<$t> else t, optional)
+      );
+      if (!optional) argsOptional = false;
+    }
+
+    observableFields.push(
+      mk({
+        var value = if (kind == KLoaded) macro : tink.state.Promised<$t> else t;
+        macro : tink.state.Observable<$value>;
+      })
     );
 
-    add(macro class {
-      @:noCompletion private var $state:tink.state.Observable<$type>;
-    });
+    var state = stateOf(f.name);
 
-    return {
-      getter: macro this.$state.value,
-      init: Skip,
-      type: type,
+    {
+      var type = switch kind {
+        case KObservable | KEditable: macro : tink.state.State<$t>;
+        default: macro : tink.state.Observable<$t>;
+      }
+
+      c.addMembers(macro class {
+        @:noCompletion var $state:$type;
+      });
     }
+
+    switch kind {
+      case KComputed | KLoaded:
+        if (e == null) 
+          f.pos.error('expression required for @$kind field');
+        init.push(macro this.$state = tink.state.Observable.auto(function () return $e));
+      default:
+        if (kind == KObservable)
+          patchFields.push({
+            name: f.name,
+            pos: f.pos,
+            meta: OPTIONAL,
+            kind: FProp('default', 'never', t)
+          });
+
+        switch e {
+          case null:
+            addArg(false);
+          case macro @byDefault $e:
+            addArg(true);
+          case v:
+        }
+    }
+
   }
 
-  function mustNotHaveMetaArgs(ctx:FieldContext) 
-    switch ctx.meta.params {
-      case []:
-      case v: 
-        v[0].reject('@:${ctx.meta.name} must not have arguments');
+  function fieldInfo(f:Field) {
+
+    var kind:Kind = null,
+        skipCheck = false;
+
+    for (m in f.meta) {
+
+      function set(k) {
+        if (isInterface && k != KLoaded)
+          m.pos.error('Directives other than `@:$KLoaded` not allowed on interface fields');
+        if (kind != null)
+          m.pos.error('`@${m.name}` conflicts with previously found `@$kind`');
+        kind = k;
+      }
+
+      switch m.name {
+        case ':skipCheck': 
+          if (skipCheck)
+            m.pos.error('duplicate @:skipCheck');
+          else 
+            skipCheck = true;
+        case KObservable: set(KObservable);
+        case KConstant: set(KConstant);
+        case KEditable: set(KEditable);
+        case KExternal: set(KExternal);
+        case KComputed: set(KComputed);
+        case KLoaded: set(KLoaded);
+        case v: m.pos.error('unrecognized @$v');
+      }
     }
 
-  function observableField(ctx:FieldContext, setter:Bool):Result {
-    var name = ctx.name,
-        state = stateOf(name);
+    if (kind == null)
+      kind = KConstant;
 
     return {
-      getter: macro @:pos(ctx.pos) this.$state.value,
-      setter: if (setter) macro @:pos(ctx.pos) this.$state.set(param) else null,
-      stateful: true,
-      transitionable: !setter,
-      init: switch ctx.expr {
-        case null: Arg();
-        case macro @byDefault $v: OptArg(v);
-        case v: Value(v);
-      },
+      kind: kind,
+      skipCheck: skipCheck
+    }    
+  }
+
+  static public function build() {
+    var fields = Context.getBuildFields();
+
+    var ctor = {
+      var res = None;
+      for (f in fields)
+        switch f {
+          case { name: 'new', kind: FFun(impl) }:
+            res = Some(impl);
+            fields.remove(f);
+            break;
+          default:
+        }
+      res;
     }
+
+    var builder = new ClassBuilder(fields);
+
+    new ModelBuilder(builder, ctor);
+
+    return builder.export();
   }
 }
