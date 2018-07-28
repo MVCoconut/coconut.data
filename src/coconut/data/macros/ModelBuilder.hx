@@ -122,6 +122,15 @@ class ModelBuilder {
       ),
     }]);
 
+    observableFields.push({
+      name: 'isInTransition',
+      pos: c.target.pos,
+      kind: FProp('default', 'never', macro : tink.state.Observable<Bool>),
+    });
+    observableInit.push({
+      field: 'isInTransition',
+      expr: macro __coco_transitionCount.observe().map(function (count) return count > 0)
+    });
     var observables = TAnonymous(observableFields);
 
     c.addMembers(macro class {
