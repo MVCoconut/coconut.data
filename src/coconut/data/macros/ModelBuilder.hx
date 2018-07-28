@@ -28,7 +28,7 @@ class ModelBuilder {
   var patchFields:Array<Field> = [];
   var observableFields:Array<Field> = [];
   var observableInit:Array<ObjectField> = [];
-  var init:Array<Expr> = [];
+  var init:Array<{ name:String, expr: Expr }> = [];
 
   var patchType:ComplexType;
 
@@ -36,7 +36,7 @@ class ModelBuilder {
   static var NOMETA = OPTIONAL.slice(OPTIONAL.length);
   static inline var TRANSITION = ':transition';
 
-  public function new(c, ctor:Option<Function>) {
+  public function new(c, ctor) {
     //TODO: put `observables` into a class if `!isInterface`
     this.c = c;
     this.isInterface = c.target.isInterface;
@@ -63,6 +63,11 @@ class ModelBuilder {
 
     addBoilerPlate();
 
+    if (!isInterface) 
+      buildConstructor(ctor);
+  }
+
+  function buildConstructor(original:Option<Function>) {
     var f:Function = {
       args: [],
       ret: macro : Void,
@@ -76,7 +81,24 @@ class ModelBuilder {
         opt: argsOptional
       });  
 
-    c.getConstructor(f).publish();
+    var constr = c.getConstructor(f);
+    
+    if (argsOptional && argFields.length > 0)
+      constr.addStatement(macro if (init == null) init = {});
+
+    constr.publish();
+
+    for (f in init)
+      constr.init(f.name, f.expr.pos, Value(f.expr), { bypass: true });
+
+    constr.init('__coco_transitionCount', c.target.pos, Value(macro new tink.state.State(0)), {bypass: true});
+    constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
+    constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
+    
+    {
+      var observables = TAnonymous(observableFields);
+      constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
+    }
   }
 
   function addBoilerPlate() {
@@ -137,8 +159,12 @@ class ModelBuilder {
   static function stateOf(name:String)
     return '__coco_$name';
 
+  static var ALLOWED = [
+    ':noCompletion' => true
+  ];
+
   function addMethod(f:Member, func:Function)
-    switch f.meta {
+    switch [for (m in f.meta) if (!ALLOWED[m.name]) m] {
       case []:
 
       case [{ name: TRANSITION, params: params, pos: pos }]:
@@ -171,13 +197,13 @@ class ModelBuilder {
             __cocoupdate((function ():tink.core.Promise<$patchType> $body)())
             .next(function (_) return $ret);
 
-      default:
+      case v:
         switch f.metaNamed(TRANSITION) {
           case [] | [_]:
           case v: v[1].pos.error('Can only have one @$TRANSITION per function');
         }
 
-        for (m in f.meta)
+        for (m in v)
           if (m.name != TRANSITION)
             m.pos.error('Tag ${m.name} not allowed');//This is perhaps not the best choice
     }
@@ -189,20 +215,25 @@ class ModelBuilder {
     if (isInterface && e != null)
       e.reject('expression not allowed here in interfaces');
 
-    var kind = {
-      var info = fieldInfo(f);
+    var name = f.name,
+        kind = {
+          var info = fieldInfo(f);
 
-      if (!info.skipCheck)
-        switch Models.check(f.pos.getOutcome(t.toType())) {
-          case []:
-          case v: f.pos.error(v[0]);
-        }
+          if (!info.skipCheck)
+            switch Models.check(f.pos.getOutcome(t.toType())) {
+              case []:
+              case v: f.pos.error(v[0]);
+            }
 
-      info.kind;
-    }
+          info.kind;
+        };
 
     f.publish();
-    f.kind = FVar(if (kind == KLoaded) macro : tink.state.Promised<$t> else t);
+    f.kind = FProp(
+      'get',
+      if (kind == KEditable) 'set' else 'never',
+      if (kind == KLoaded) macro : tink.state.Promised<$t> else t
+    );
 
     function mk(t:ComplexType, ?optional:Bool):Field
       return {
@@ -212,56 +243,113 @@ class ModelBuilder {
         kind: FProp('default', 'never', t)
       };
 
-    function addArg(optional:Bool) {
-      argFields.push(
-        mk(if (kind == KExternal) macro : coconut.data.Value<$t> else t, optional)
-      );
+    function addArg(?dFault:Expr) {
+      var optional = dFault != null,
+          type = if (kind == KExternal) macro : coconut.data.Value<$t> else t;
+      
+      argFields.push(mk(type, optional));
+      
       if (!optional) argsOptional = false;
+
+      return 
+        if (optional) 
+          macro @:pos(f.pos) switch init.$name {
+            case null: ($dFault : $type);
+            case v: v;
+          }
+        else macro @:pos(f.pos) init.$name;
     }
 
+    var valueType = if (kind == KLoaded) macro : tink.state.Promised<$t> else t;
+    
     observableFields.push(
-      mk({
-        var value = if (kind == KLoaded) macro : tink.state.Promised<$t> else t;
-        macro : tink.state.Observable<$value>;
-      })
+      mk(macro : tink.state.Observable<$valueType>)
     );
 
-    var state = stateOf(f.name);
+    var state = stateOf(f.name),
+        mutable = kind == KObservable || kind == KEditable;
+
+    observableInit.push({
+      field: f.name,
+      expr: switch kind {
+        case KConstant:
+          macro @:pos(f.pos) tink.state.Observable.const($i{name});
+        default: 
+          macro @:pos(f.pos) $i{state}
+      }
+    });
 
     {
-      var type = switch kind {
-        case KObservable | KEditable: macro : tink.state.State<$t>;
-        default: macro : tink.state.Observable<$t>;
-      }
+      var getter = 'get_$name',
+          get = switch kind {
+            case KConstant: 
+              macro @:pos(f.pos) $i{name};
+            default: 
+              var type =
+                if (mutable) macro : tink.state.State<$valueType>;
+                else macro : tink.state.Observable<$valueType>;
+
+              c.addMembers(macro class {
+                @:noCompletion var $state:$type;
+              });
+
+              macro @:pos(f.pos) $i{stateOf(name)}.value;
+          };
 
       c.addMembers(macro class {
-        @:noCompletion var $state:$type;
+        @:noCompletion inline function $getter():$valueType return $get;
       });
     }
 
-    switch kind {
-      case KComputed | KLoaded:
-        if (e == null) 
-          f.pos.error('expression required for @$kind field');
-        init.push(macro this.$state = tink.state.Observable.auto(function () return $e));
-      default:
-        if (kind == KObservable)
-          patchFields.push({
-            name: f.name,
-            pos: f.pos,
-            meta: OPTIONAL,
-            kind: FProp('default', 'never', t)
-          });
-
-        switch e {
-          case null:
-            addArg(false);
-          case macro @byDefault $e:
-            addArg(true);
-          case v:
+    if (kind == KEditable) {
+      var setter = 'set_$name';
+      c.addMembers(macro class {
+        @:noCompletion function $setter(param:$valueType):$valueType {
+          $i{state}.set(param);
+          return param;
         }
+      });
     }
 
+    if (kind == KObservable)
+      patchFields.push(mk(valueType, true));
+
+    init.push(
+      if (kind == KConstant) { 
+        name: name, 
+        expr: switch e {
+          case null: addArg();
+          case macro @byDefault $v: addArg(v);
+          default: e;
+        } 
+      }
+      else {
+        name: state,
+        expr: switch kind {
+          case KComputed | KLoaded:
+            switch e {
+              case null: 
+                f.pos.error('`@$kind` must be initialized with an expression');
+              case macro @byDefault $v: 
+                e.reject('`@byDefault` not allowed for `@$kind`');
+              default: 
+            }
+            macro @pos(e.pos) tink.state.Observable.auto(function () return $e);
+          case _ == KExternal => external:
+            var init = 
+              switch e {
+                case null: addArg();
+                case macro @byDefault $v: addArg(v);
+                default: 
+                  if (external) 
+                    e.reject('`@:external` fields cannot be initialized. Did you mean to use `@byDefault`?');
+                  else e;
+              }
+            if (external) init;
+            else macro @:pos(init.pos) new tink.state.State<$valueType>($init);
+        }
+      }
+    );
   }
 
   function fieldInfo(f:Field) {
@@ -271,26 +359,22 @@ class ModelBuilder {
 
     for (m in f.meta) {
 
-      function set(k) {
-        if (isInterface && k != KLoaded)
-          m.pos.error('Directives other than `@:$KLoaded` not allowed on interface fields');
-        if (kind != null)
-          m.pos.error('`@${m.name}` conflicts with previously found `@$kind`');
-        kind = k;
-      }
-
       switch m.name {
         case ':skipCheck': 
+        
           if (skipCheck)
             m.pos.error('duplicate @:skipCheck');
           else 
             skipCheck = true;
-        case KObservable: set(KObservable);
-        case KConstant: set(KConstant);
-        case KEditable: set(KEditable);
-        case KExternal: set(KExternal);
-        case KComputed: set(KComputed);
-        case KLoaded: set(KLoaded);
+
+        case k = KObservable | KConstant | KEditable | KExternal | KComputed | KLoaded:
+
+          if (isInterface && k != KLoaded)
+            m.pos.error('Directives other than `@:$KLoaded` not allowed on interface fields');
+          if (kind != null)
+            m.pos.error('`@${m.name}` conflicts with previously found `@$kind`');
+          kind = k;
+
         case v: m.pos.error('unrecognized @$v');
       }
     }
