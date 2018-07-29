@@ -260,7 +260,7 @@ enum Foople {
   Froz2(a:Array<Int>);
 }
 
-class RandomExternals implements coconut.data.Model {
+class RandomExternals implements Model {
   @:external var foo:String = @byDefault "foo";
   @:external var bar:Int = @byDefault {
     var s = new State(0);
@@ -270,7 +270,7 @@ class RandomExternals implements coconut.data.Model {
   static public var tick = new SignalTrigger<Noise>();
 }
 
-class TodoItem implements coconut.data.Model {
+class TodoItem implements Model {
 
   @:constant var server:{ function loadSimilarTodos(description:String):Promise<Iterable<TodoItem>>; };
   @:constant var created:Date = @byDefault Date.now();
@@ -297,7 +297,7 @@ class Server {
     return ([]:Iterable<TodoItem>);
 }
 
-class Rates implements coconut.data.Model {
+class Rates implements Model {
   
   @:observable var taxRate:Int = 0;
   @:observable var luxuryRate:Int = 0;
