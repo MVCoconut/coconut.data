@@ -19,12 +19,26 @@ class RunTests {
       new ExternalTest(),
       new TodoModelTest(),
       new SelectionTest(),
+      new CustomConstructorTest(),
     ])).handle(exit);
     var a:InitialArgs<TransitionModel> = {};
     a = { value: 12 };
     a = {};
+    
   }
   
+}
+
+
+@:asserts
+class CustomConstructorTest {
+  public function new() {}
+  
+  public function normal() {
+    var w = new WithCustomConstructor(42, 123);
+    asserts.assert(w.sum == 165);
+    return asserts.done();
+  }
 }
 
 @:asserts
@@ -57,7 +71,7 @@ class TransitionTest {
 class ExternalTest {
   public function new() {}
   static inline var ONE_MILE_IN_METERS = 1600;//or something
-  @:describe("external")
+
   public function external(test:AssertionBuffer) {
     var compass = new Compass(),
         speedometer = new Speedometer();
@@ -70,6 +84,20 @@ class ExternalTest {
     test.assert(movement.heading == 0);
     compass.degrees = 90;
     test.assert(movement.heading == Math.PI / 2);
+    return test.done();
+  }
+
+  public function defaults(test:AssertionBuffer) {
+    var m = new RandomExternals({ foo: "foofoo", bar: 12 });
+    test.assert(m.foo == "foofoo");
+    test.assert(m.bar == 12);
+
+    var m = new RandomExternals();
+    test.assert(m.foo == "foo");
+    test.assert(m.bar == 0);
+    RandomExternals.tick.trigger(Noise);
+    RandomExternals.tick.trigger(Noise);
+    test.assert(m.bar == 2);
     return test.done();
   }
 }
@@ -232,6 +260,16 @@ enum Foople {
   Froz2(a:Array<Int>);
 }
 
+class RandomExternals implements coconut.data.Model {
+  @:external var foo:String = @byDefault "foo";
+  @:external var bar:Int = @byDefault {
+    var s = new State(0);
+    tick.handle(function () s.set(s.value + 1));
+    s;
+  }
+  static public var tick = new SignalTrigger<Noise>();
+}
+
 class TodoItem implements coconut.data.Model {
 
   @:constant var server:{ function loadSimilarTodos(description:String):Promise<Iterable<TodoItem>>; };
@@ -335,10 +373,8 @@ class TransitionModel implements Model {
 
 class WithCustomConstructor implements Model {
   @:observable var sum:Int;
-  function new(a:Int, b:Int, log:String->Void) {
-    log('before');
+  function new(a:Int, b:Int) {
     // log('sum ${this.sum}');//shouldn't compile
     this = { sum: a + b };
-    log('sum ${this.sum}');
   }
 }
