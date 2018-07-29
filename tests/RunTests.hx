@@ -332,3 +332,13 @@ class TransitionModel implements Model {
   function failure()
     return new Error('Dummy');
 }
+
+class WithCustomConstructor implements Model {
+  @:observable var sum:Int;
+  function new(a:Int, b:Int, log:String->Void) {
+    log('before');
+    // log('sum ${this.sum}');//shouldn't compile
+    this = { sum: a + b };
+    log('sum ${this.sum}');
+  }
+}

@@ -11,7 +11,7 @@ This library is the meat of the coconut, so to speak. It allows you to model you
 
 A model in coconut is an object that `implements coconut.data.Model`.
 
-Models are quite restrictive about what kind of properties they allow. Currently, there are five kinds, each of which is designated by special metadata.
+Models are quite restrictive about what kind of properties they allow. Currently, there are six kinds, each of which is designated by special metadata.
 
 - `@:constant` - is initialized upon construction and never changes
 - `@:observable` - may change over time with the model's *transtions* (more on those later)
@@ -34,7 +34,7 @@ class TodoItem implements Model {
 }
 ```
 
-The model's constructor is auto generated to accept any of the physical properties (unless they're initialized directly) and to require them if no default is provided. As for `@:computed` and `@:loaded` properties we see that the computation to determine their value is defined on the right side of their declaration.
+By default, the model's constructor is auto generated to accept any of the physical properties (unless they're initialized directly) and to require them if no default is provided. As for `@:computed` and `@:loaded` properties we see that the computation to determine their value is defined on the right side of their declaration.
 
 This will result in a class with the following signature (accessors omitted for simplicity):
 
@@ -94,18 +94,18 @@ class TodoItem implements Model {
 And of course you can still specify a default:
 
 ```haxe
-@:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<tink.pure.List<TodoItem>>; } = @byDefault Server;`.
+@:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<tink.pure.List<TodoItem>>; } = @byDefault Server;
 ```
 
 This technique may also make sense for directly `@:computed` properties.
 
 ## Observables
 
-You may have noticed the `observable` field, which exposes one observable per each individual field to allow explicitly dealing with `tink_state` observables. It is absolutely safe to ignore and let coconut implicitly propagate changes through your application. Here is how you could use it by hand though:
+You may have noticed the `observables` field, which exposes one observable per each individual field to allow explicitly dealing with `tink_state` observables. It is absolutely safe to ignore and let coconut implicitly propagate changes through your application. Here is how you could use it by hand though:
 
 ```haxe
 var todo = new TodoItem({ description: 'Hello, World!'});
-todo.observable.firstLine.bind({ direct: true }, function (line) trace(line));
+todo.observables.firstLine.bind({ direct: true }, function (line) trace(line));
 todo.description = 'Hello\nWorld!';
 
 //output:
@@ -134,7 +134,7 @@ class Rates implements coconut.data.Model {
     else if (to > 100) to = 100;
 
     return 
-      if (to < taxRate || to - taxRate < scienceRate) { taxRate: to };
+      if (to + luxuryRate < 100) { taxRate: to };
       else { taxRate: to, luxuryRate: 100 - to };
   }
 
@@ -144,13 +144,13 @@ class Rates implements coconut.data.Model {
     else if (to > 100) to = 100;
 
     return 
-      if (to < luxuryRate || to - luxuryRate < scienceRate) { luxuryRate: to };
+      if (to + taxRate < 100) { luxuryRate: to };
       else { luxuryRate: to, taxRate: 100 - to };
   }  
 }
 ```
 
-In this case we are returning the state changes directly, which is also possible since promises have an implicit cast from direct values. 
+You may notice that in this case we are returning the state changes synchronously. This works, because promises have an implicit cast from direct values. 
 
 ### When Type Inference Fails
 
@@ -218,6 +218,33 @@ Technically you can do things like `@:transition(return Date.now().getTime())` b
 ### Synchronization
 
 ... is also planned ...
+
+## Custom Constructors
+
+It is possible to have custom constructors of two kinds:
+
+1. **without arguments**: in this case the constructor still is generated, and the constructor body supplied by you is executed after the model is initialized. Think of it as a post-construct hook.
+2. **with arguments**: 
+
+  The structure of such a constructor is as follows:
+
+  ```haxe
+  @:constant var foo:Int;
+  @:constant var bar:String = @byDefault "bar";
+  @:constant var beep:String = "beep";
+  @:constant var bop:String = @byDefault "bop";
+  function new(arg1:T1, arg2:T2) {
+    //any code here is executed prior to initialization and access to `this` results in a compiler error
+    
+    this = {//exactly one assignment to `this` is expected in the constructor body and it must contain a value for every property that doesn't have an initial or default value
+      foo: 42,
+      bar: 'barbar'
+    };
+    
+    //any code here may now access `this` as the model is now initialized
+  }
+  ```
+
 
 # To cycle or not to cycle
 

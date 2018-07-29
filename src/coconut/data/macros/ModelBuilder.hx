@@ -68,27 +68,84 @@ class ModelBuilder {
   }
 
   function buildConstructor(original:Option<Function>) {
+
     var f:Function = {
       args: [],
       ret: macro : Void,
       expr: macro {},
     };
 
-    if (argFields.length > 0)
-      f.args.push({
-        name: 'init',
-        type: TAnonymous(argFields),
-        opt: argsOptional
-      });  
+    var init = null,
+        afterInit = [],
+        argType = TAnonymous(argFields);
+
+    switch original {
+      case None:
+      case Some(ctor):
+        var exprs = switch ctor.expr {
+          case { expr: EBlock(v) }: v;
+          case v: [v];
+        }
+
+        var beforeInit = [];
+
+        for (e in exprs)
+          switch e {
+            case macro this = $e: 
+              if (init != null) 
+                e.reject('can only have one `this = ...` initialization.');
+              else
+                init = e;
+            default:
+              if (init == null) beforeInit.push(e);
+              else afterInit.push(e);
+          }
+
+        if (init == null)
+          if (ctor.args.length == 0 || argFields.length == 0) 
+            afterInit = beforeInit;
+          else
+            ctor.expr.reject('Constructor with custom arguments must have `this = ...` clause');
+        else {
+          c.addMember({
+            name: "__coco__computeInitialValues",
+            pos: c.target.pos,
+            meta: [{ name: ':extern', params: [], pos: c.target.pos}],
+            access: [AStatic, AInline],
+            kind: FFun({
+              args: ctor.args,
+              params: ctor.params,//TODO: this also needs the class params
+              ret: argType,
+              expr: beforeInit.concat([macro return $init]).toBlock()
+            })
+          });
+
+          var args = [for (a in ctor.args) macro $i{a.name}];
+
+          init = macro var init = __coco__computeInitialValues($a{args});
+          f.args = ctor.args;
+        }
+    }
+
+    if (init == null)
+      if (argFields.length > 0)
+        f.args.push({
+          name: 'init',
+          type: argType,
+          opt: argsOptional
+        });  
 
     var constr = c.getConstructor(f);
     
-    if (argsOptional && argFields.length > 0)
-      constr.addStatement(macro if (init == null) init = {});
+    if (init != null)
+      constr.addStatement(init);
+    else
+      if (argsOptional && argFields.length > 0)
+        constr.addStatement(macro if (init == null) init = {});
 
     constr.publish();
 
-    for (f in init)
+    for (f in this.init)
       constr.init(f.name, f.expr.pos, Value(f.expr), { bypass: true });
 
     constr.init('__coco_transitionCount', c.target.pos, Value(macro new tink.state.State(0)), {bypass: true});
@@ -406,6 +463,8 @@ class ModelBuilder {
         switch f {
           case { name: 'new', kind: FFun(impl) }:
             res = Some(impl);
+            if (impl.expr == null)
+              f.pos.error('Constructor body required');
             fields.remove(f);
             break;
           default:
