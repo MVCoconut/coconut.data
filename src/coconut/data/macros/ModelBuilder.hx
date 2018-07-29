@@ -400,7 +400,7 @@ class ModelBuilder {
                 e.reject('`@byDefault` not allowed for `@$kind`');
               default: 
             }
-            macro @pos(e.pos) tink.state.Observable.auto(function () return $e);
+            macro @:pos(e.pos) tink.state.Observable.auto(function () return $e);
           case _ == KExternal => external:
             var init = 
               switch e {
