@@ -11,7 +11,6 @@ import coconut.data.*;
 using tink.CoreApi;
 
 class RunTests {
-  
 
   static function main() {
     run(TestBatch.make([
