@@ -145,9 +145,15 @@ class ModelBuilder {
 
     constr.publish();
 
-    for (f in this.init)
-      constr.init(f.name, f.expr.pos, Value(f.expr), { bypass: true });
 
+    if (!isInterface && !c.target.meta.has(':tink'))
+      c.target.meta.add(':tink', [], c.target.pos);
+    
+    {
+      var transform = tink.SyntaxHub.exprLevel.appliedTo(c).force();
+      for (f in this.init)
+        constr.init(f.name, f.expr.pos, Value(transform(f.expr)), { bypass: true });
+    }
     constr.init('__coco_transitionCount', c.target.pos, Value(macro new tink.state.State(0)), {bypass: true});
     constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
     constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
