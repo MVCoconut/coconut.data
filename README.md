@@ -80,14 +80,14 @@ Because the computation is asynchronous its current state can assume any of the 
 
 ### Injecting services
 
-To properly modularize your application you will want to avoid depend your models on services directly as it is on the example. Instead you will want a setup that is more like this:
+To properly modularize your application you will want to avoid having your models depend on services directly as it is in the above example. Instead, try to follow an approach where you provide services from outside, like so:
 
 ```haxe 
 class TodoItem implements Model {
   // ... rest as above
 
   @:constant var server:{ function loadSimilarTodos(description:String):tink.core.Promise<tink.pure.List<TodoItem>>; };
-  @:promised var similar:tink.pure.List<TodoItem> = server.loadSimilarTodos(this.description);
+  @:loaded var similar:tink.pure.List<TodoItem> = server.loadSimilarTodos(this.description);
 }
 ```
 
