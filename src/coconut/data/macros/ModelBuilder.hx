@@ -269,6 +269,11 @@ class ModelBuilder {
             __cocoupdate((function ():tink.core.Promise<$patchType> $body)())
             .next(function (_) return $ret);
 
+        func.ret = {
+          var blank = func.expr.pos.makeBlankType();
+          macro : tink.core.Promise<$blank>;
+        }
+
       case v:
         switch f.metaNamed(TRANSITION) {
           case [] | [_]:
@@ -276,9 +281,12 @@ class ModelBuilder {
         }
 
         for (m in v)
-          if (m.name != TRANSITION)
+          if (!allowedOnFunctions[m.name])
             m.pos.error('Tag ${m.name} not allowed');//This is perhaps not the best choice
     }
+
+  static var allowedOnFields = [for (m in [':forward']) m => true];
+  static var allowedOnFunctions = [for (m in [TRANSITION, ':keep', ':extern', ':deprecated']) m => true];
 
   function addField(f:Member, t:ComplexType, e:Expr) {
     if (t == null) 
@@ -447,7 +455,9 @@ class ModelBuilder {
             m.pos.error('`@${m.name}` conflicts with previously found `@$kind`');
           kind = k;
 
-        case v: m.pos.error('unrecognized @$v');
+        case v: 
+          if (!allowedOnFields[v])
+            m.pos.error('unrecognized @$v');
       }
     }
 
