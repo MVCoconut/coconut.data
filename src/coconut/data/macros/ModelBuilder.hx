@@ -162,6 +162,9 @@ class ModelBuilder {
       var observables = TAnonymous(observableFields);
       constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
     }
+
+    for (s in afterInit)
+      constr.addStatement(s);
   }
 
   function addBoilerPlate() {
