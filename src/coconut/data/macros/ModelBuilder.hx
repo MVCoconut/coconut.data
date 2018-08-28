@@ -343,25 +343,27 @@ class ModelBuilder {
         else macro @:pos(f.pos) init.$name;
     }
 
-    var valueType = if (kind == KLoaded) macro : tink.state.Promised<$t> else t;
-    
-    observableFields.push(
-      mk(macro : tink.state.Observable<$valueType>)
-    );
-
-    var state = stateOf(f.name),
+    var valueType = if (kind == KLoaded) macro : tink.state.Promised<$t> else t,
+        state = stateOf(f.name),
         mutable = kind == KObservable || kind == KEditable;
 
-    observableInit.push({
-      field: f.name,
-      expr: switch kind {
-        case KConstant:
-          macro @:pos(f.pos) tink.state.Observable.const($i{name});
-        default: 
-          macro @:pos(f.pos) $i{state}
-      }
-    });
+    if (f.isPublic) {
+      observableFields.push({
+        var exposed = if (kind == KEditable) 'State' else 'Observable';
+        mk(macro : tink.state.$exposed<$valueType>);
+      });
 
+      observableInit.push({
+        field: f.name,
+        expr: switch kind {
+          case KConstant:
+            macro @:pos(f.pos) tink.state.Observable.const($i{name});
+          default: 
+            macro @:pos(f.pos) $i{state}
+        }
+      });
+    }
+    
     {
       var getter = 'get_$name',
           get = switch kind {
