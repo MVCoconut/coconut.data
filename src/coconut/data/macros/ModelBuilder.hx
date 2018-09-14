@@ -284,7 +284,7 @@ class ModelBuilder {
         }
 
         for (m in v)
-          if (m.name.charAt(0) != ':' && !allowedOnFunctions[m.name])
+          if (m.name.charAt(0) == ':' && !allowedOnFunctions[m.name])
             m.pos.error('Tag ${m.name} not allowed');//This is perhaps not the best choice
     }
 
