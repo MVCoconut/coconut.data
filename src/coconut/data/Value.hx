@@ -19,6 +19,10 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> {
       switch typeExpr(e) {
         case { expr: TConst(_) }:
           macro @:pos(e.pos) tink.state.Observable.const($e);
+        case { expr: TField(owner, FInstance(_, _, f)) } if (unify(owner.t, getType('coconut.data.Model'))):
+          //TODO: a more aggressive optimization would be to look into the getter and if it merely accesses an observable, grab that ... would reduce the cost of spreading attributes into a child in coconut.ui
+          var name = f.get().name;
+          macro @:pos(e.pos) ${storeTypedExpr(owner)}.observables.$name;
         case { t: type }:
           var expected = switch getExpectedType().reduce() {
             case TAbstract(_.get().module => 'coconut.data.Value', [_.toComplex() => e]): e;
