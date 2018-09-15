@@ -76,7 +76,8 @@ class ExternalTest {
   static inline var ONE_MILE_IN_METERS = 1600;//or something
 
   public function external(test:AssertionBuffer) {
-    var compass = new Compass(),
+    var degrees = new State(.0);
+    var compass = new Compass({ degrees: degrees }),
         speedometer = new Speedometer();
 
     var movement:Movement = new Movement({ 
@@ -87,6 +88,8 @@ class ExternalTest {
     test.assert(movement.heading == 0);
     compass.degrees = 90;
     test.assert(movement.heading == Math.PI / 2);
+    degrees.set(180);
+    test.assert(movement.heading == Math.PI);
     return test.done();
   }
 
@@ -355,7 +358,7 @@ class Movement implements Model {
 }
 
 class Compass implements Model {
-  @:editable var degrees:Float = @byDefault .0;
+  @:shared var degrees:Float = @byDefault new State(.0);
 }
 
 class Speedometer implements Model {

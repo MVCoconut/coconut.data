@@ -19,6 +19,7 @@ Models are quite restrictive about what kind of properties they allow. Currently
 - `@:computed` - a property computed from the model's state
 - `@:loaded` - not unlike a computed property, but the computation is asynchronous
 - `@:external` - the module consumes an `Observable` upon construction and exposes it as if it were its own
+- `@:shared` - the module consumes a `State` upon construction and exposes it as if it were its own
 
 The first three are physically existent on the model, while the latter two are dependent values. Let's see how we might use them:
 

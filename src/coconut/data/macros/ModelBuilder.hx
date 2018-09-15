@@ -14,6 +14,7 @@ using tink.CoreApi;
   var KConstant = ':constant';
   var KEditable = ':editable';
   var KExternal = ':external';
+  var KShared = ':shared';
   var KComputed = ':computed';
   var KLoaded = ':loaded';
 }
@@ -311,10 +312,14 @@ class ModelBuilder {
           info.kind;
         };
 
+    var injected = kind == KExternal || kind == KShared;
+    var settable = kind == KEditable || kind == KShared;
+    var mutable = kind == KObservable || kind == KEditable;
+
     f.publish();
     f.kind = FProp(
       'get',
-      if (kind == KEditable) 'set' else 'never',
+      if (settable) 'set' else 'never',
       if (kind == KLoaded) macro : tink.state.Promised<$t> else t
     );
 
@@ -328,7 +333,11 @@ class ModelBuilder {
 
     function addArg(?dFault:Expr) {
       var optional = dFault != null,
-          type = if (kind == KExternal) macro : coconut.data.Value<$t> else t;
+          type = switch kind {
+            case KExternal: macro : coconut.data.Value<$t>;
+            case KShared: macro : coconut.data.Variable<$t>;
+            default: t;
+          }
       
       argFields.push(mk(type, optional));
       
@@ -344,12 +353,11 @@ class ModelBuilder {
     }
 
     var valueType = if (kind == KLoaded) macro : tink.state.Promised<$t> else t,
-        state = stateOf(f.name),
-        mutable = kind == KObservable || kind == KEditable;
+        state = stateOf(f.name);
 
     if (f.isPublic) {
       observableFields.push({
-        var exposed = if (kind == KEditable) 'State' else 'Observable';
+        var exposed = if (settable) 'State' else 'Observable';
         mk(macro : tink.state.$exposed<$valueType>);
       });
 
@@ -371,7 +379,7 @@ class ModelBuilder {
               macro @:pos(f.pos) $i{name};
             default: 
               var type =
-                if (mutable) macro : tink.state.State<$valueType>;
+                if (mutable || settable) macro : tink.state.State<$valueType>;
                 else macro : tink.state.Observable<$valueType>;
 
               c.addMembers(macro class {
@@ -386,7 +394,7 @@ class ModelBuilder {
       });
     }
 
-    if (kind == KEditable) {
+    if (settable) {
       var setter = 'set_$name';
       c.addMembers(macro class {
         @:noCompletion function $setter(param:$valueType):$valueType {
@@ -420,17 +428,17 @@ class ModelBuilder {
               default: 
             }
             macro @:pos(e.pos) tink.state.Observable.auto(function () return $e);
-          case _ == KExternal => external:
+          default:
             var init = 
               switch e {
                 case null: addArg();
                 case macro @byDefault $v: addArg(v);
                 default: 
-                  if (external) 
-                    e.reject('`@:external` fields cannot be initialized. Did you mean to use `@byDefault`?');
+                  if (injected) 
+                    e.reject('`@:$kind` fields cannot be initialized. Did you mean to use `@byDefault`?');
                   else e;
               }
-            if (external) init;
+            if (injected) init;
             else macro @:pos(init.pos) new tink.state.State<$valueType>($init);
         }
       }
@@ -452,7 +460,7 @@ class ModelBuilder {
           else 
             skipCheck = true;
 
-        case k = KObservable | KConstant | KEditable | KExternal | KComputed | KLoaded:
+        case k = KObservable | KConstant | KEditable | KExternal | KShared | KComputed | KLoaded:
 
           if (isInterface && k != KLoaded)
             m.pos.error('Directives other than `@:$KLoaded` not allowed on interface fields');
