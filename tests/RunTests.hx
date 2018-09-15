@@ -76,20 +76,30 @@ class ExternalTest {
   static inline var ONE_MILE_IN_METERS = 1600;//or something
 
   public function external(test:AssertionBuffer) {
-    var degrees = new State(.0);
-    var compass = new Compass({ degrees: degrees }),
-        speedometer = new Speedometer();
+    var mph = new State(.0);
+    var compass = new Compass(),
+        speedometer = new Speedometer({ mph: mph });
+
+    function mphToMps(mph:Float)
+      return mph * ONE_MILE_IN_METERS / 3600;
 
     var movement:Movement = new Movement({ 
       heading: compass.degrees / 180 * Math.PI,
-      speed: speedometer.mph * ONE_MILE_IN_METERS / 3600,
+      speed: mphToMps(speedometer.mph),
     });
     
     test.assert(movement.heading == 0);
     compass.degrees = 90;
     test.assert(movement.heading == Math.PI / 2);
-    degrees.set(180);
-    test.assert(movement.heading == Math.PI);
+    compass.degrees += 360;
+    test.assert(movement.heading == Math.PI / 2);
+    
+    test.assert(movement.speed == 0);
+    speedometer.mph = 100 / mphToMps(1);
+    test.assert(movement.speed == 100);
+    mph.set(10);
+    test.assert(movement.speed == mphToMps(mph.value));
+
     return test.done();
   }
 
@@ -358,11 +368,11 @@ class Movement implements Model {
 }
 
 class Compass implements Model {
-  @:shared var degrees:Float = @byDefault new State(.0);
+  @:editable(guard = (next % 360 + 360) % 360) var degrees:Float = @byDefault .0;
 }
 
 class Speedometer implements Model {
-  @:editable var mph:Float = @byDefault .0;
+  @:shared var mph:Float = @byDefault new State(.0);
 }
 
 class TransitionModel implements Model {

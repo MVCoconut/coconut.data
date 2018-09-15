@@ -299,22 +299,47 @@ class ModelBuilder {
     if (isInterface && e != null)
       e.reject('expression not allowed here in interfaces');
 
+    var info = fieldInfo(f);
+
+    if (!info.skipCheck)
+      switch Models.check(f.pos.getOutcome(t.toType())) {
+        case []:
+        case v: f.pos.error(v[0]);
+      }
+
     var name = f.name,
-        kind = {
-          var info = fieldInfo(f);
-
-          if (!info.skipCheck)
-            switch Models.check(f.pos.getOutcome(t.toType())) {
-              case []:
-              case v: f.pos.error(v[0]);
-            }
-
-          info.kind;
-        };
+        kind = info.kind;
 
     var injected = kind == KExternal || kind == KShared;
     var settable = kind == KEditable || kind == KShared;
     var mutable = kind == KObservable || kind == KEditable;
+    
+    var config = {
+      comparator: macro null,
+      guard: macro null
+    }
+
+    for (e in info.params)
+      switch e {
+        case macro $option = $v:
+
+          function make(ret)
+            return macro @:pos(v.pos) function (next:$ret, prev:$ret):$ret return $v;
+
+          switch option.getIdent().sure() {
+            case 'guard': 
+              config.guard = make(t);
+            case 'comparator': 
+              config.comparator = make(macro : Bool);
+            default: 
+              option.reject('only `guard` and `comparator` allowed here');
+          }
+
+          if (!mutable)
+            option.reject('not supported for `@:$kind` yet');
+        default:
+          e.reject("only expressions as <option> = <value> allowed here");
+      }
 
     f.publish();
     f.kind = FProp(
@@ -429,6 +454,7 @@ class ModelBuilder {
             }
             macro @:pos(e.pos) tink.state.Observable.auto(function () return $e);
           default:
+
             var init = 
               switch e {
                 case null: addArg();
@@ -438,17 +464,21 @@ class ModelBuilder {
                     e.reject('`@:$kind` fields cannot be initialized. Did you mean to use `@byDefault`?');
                   else e;
               }
+
             if (injected) init;
-            else macro @:pos(init.pos) new tink.state.State<$valueType>($init);
+            else macro @:pos(init.pos) new tink.state.State<$valueType>($init, ${config.comparator}, ${config.guard});
         }
       }
     );
   }
 
+  static var EMPTY = [];
+
   function fieldInfo(f:Field) {
 
     var kind:Kind = null,
-        skipCheck = false;
+        skipCheck = false,
+        params = EMPTY;
 
     for (m in f.meta) {
 
@@ -466,6 +496,8 @@ class ModelBuilder {
             m.pos.error('Directives other than `@:$KLoaded` not allowed on interface fields');
           if (kind != null)
             m.pos.error('`@${m.name}` conflicts with previously found `@$kind`');
+
+          params = m.params;
           kind = k;
 
         case v: 
@@ -479,7 +511,8 @@ class ModelBuilder {
 
     return {
       kind: kind,
-      skipCheck: skipCheck
+      skipCheck: skipCheck,
+      params: params,
     }    
   }
 
