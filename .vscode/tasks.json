@@ -2,6 +2,6 @@
     "version": "0.1.0",
     "command": "haxelib",
     "isShellCommand": true,
-    "args": ["run", "travix", "node"],
+    "args": ["run", "travix", "neko"],
     "problemMatcher": "$haxe"
 }

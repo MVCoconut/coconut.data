@@ -8,6 +8,7 @@ import haxe.macro.Context;
 import haxe.macro.Expr;
 using tink.MacroApi;
 using tink.CoreApi;
+using Lambda;
 
 @:enum abstract Kind(String) from String to String {
   var KObservable = ':observable';
@@ -47,7 +48,7 @@ class ModelBuilder {
         switch f.kind {
           case FProp(_, _, _, _): 
             f.pos.error('Custom properties not allowed in models');
-          case FVar(t, e):
+          case FVar(t, e) if (!f.meta.exists(function (m) return m.name == ':signal')):
             addField(f, t, e);
           default:
         }

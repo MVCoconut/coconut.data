@@ -377,10 +377,12 @@ class Speedometer implements Model {
 
 class TransitionModel implements Model {
   @:observable var value:Int = @byDefault 0;
-  
+  @:signal var boink:String;
   @:transition
-  function modify(v:Int)
+  function modify(v:Int) {
+    _boink.trigger('blub');
     return Future.async(function(cb) haxe.Timer.delay(cb.bind({value: v}), 10));
+  }
   
   @:transition
   function failure()
