@@ -46,8 +46,13 @@ class ModelBuilder {
     for (f in c)
       if (!f.isStatic)
         switch f.kind {
+          case FProp('get', 'set' | 'never', _, _): 
+            switch f.extractMeta(':isVar') {
+              case Success(m): m.pos.error('Cannot use `@:isVar` on custom properties in models.');
+              default:
+            }
           case FProp(_, _, _, _): 
-            f.pos.error('Custom properties not allowed in models');
+            f.pos.error('Custom properties may only use `get`, `set` and `never` access.');
           case FVar(t, e) if (!f.meta.exists(function (m) return m.name == ':signal')):
             addField(f, t, e);
           default:
