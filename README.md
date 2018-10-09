@@ -16,8 +16,8 @@ Models are quite restrictive about what kind of properties they allow. Currently
 - `@:constant` - is initialized upon construction and never changes
 - `@:observable` - may change over time with the model's *transtions* (more on those later)
 - `@:editable` - may be set from outside.
-- `@:computed` - a property computed from the model's state
-- `@:loaded` - not unlike a computed property, but the computation is asynchronous
+- `@:computed` - a property computed from the model's state - the last value is accessible as `Option` via `$last`
+- `@:loaded` - not unlike a computed property, but the computation is asynchronous - the last value is accessible as `Option` via `$last`
 - `@:external` - the module consumes an `Observable` upon construction and exposes it as if it were its own
 - `@:shared` - the module consumes a `State` upon construction and exposes it as if it were its own
 

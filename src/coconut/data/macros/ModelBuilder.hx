@@ -458,7 +458,19 @@ class ModelBuilder {
                 e.reject('`@byDefault` not allowed for `@$kind`');
               default: 
             }
-            macro @:pos(e.pos) tink.state.Observable.auto(function () return $e);
+
+            var name = null;
+            e = e.transform(function (e) return switch e.expr {
+              case EConst(CIdent("$last")): 
+                name = MacroApi.tempName(); 
+                macro @:pos(e.pos) $i{name};
+              default: e;
+            });
+            
+            var impl = 
+              if (name != null) macro function ($name:tink.core.Option<$t>) return $e; 
+              else macro function () return $e;
+            macro @:pos(e.pos) tink.state.Observable.auto($impl);
           default:
 
             var init = 
