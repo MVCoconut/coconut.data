@@ -1,6 +1,17 @@
 {
 	"name": "coconut.data",
-	"license": "MIT",
+	"classPath": "src",
+	"dependencies": {
+		"tink_lang": "",
+		"tink_pure": "",
+		"tink_state": ""
+	},
+	"url": "https://github.com/MVCoconut/coconut.data/",
+	"contributors": [
+		"back2dos"
+	],
+	"version": "0.8.0",
+	"releasenote": "Add support for getting last value in computed/loaded properties, @:shared fields, getting last value in computed/loaded properties and custom constructors.",
 	"tags": [
 		"data",
 		"state",
@@ -9,16 +20,5 @@
 		"reactive",
 		"observable"
 	],
-	"classPath": "src",
-	"contributors": [
-		"back2dos"
-	],
-	"releasenote": "Transitions return Noise by default. Fix diagnostics issue. Ajust to latest tink_state.",
-	"version": "0.7.0",
-	"url": "https://github.com/MVCoconut/coconut.data/",
-	"dependencies": {
-		"tink_state": "",
-		"tink_lang": "",
-		"tink_pure": ""
-	}
+	"license": "MIT"
 }
