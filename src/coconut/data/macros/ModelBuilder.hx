@@ -206,7 +206,7 @@ class ModelBuilder {
     });
     var observables = TAnonymous(observableFields);
 
-    c.addMembers(macro class {
+    var fields:Array<Member> = (macro class {
       @:noCompletion function __cocoupdate(ret:tink.core.Promise<$patchType>) {
         var sync = true;
         var done = false;
@@ -235,7 +235,11 @@ class ModelBuilder {
       var __coco_transitionCount(default, never):tink.state.State<Int>;
       public var isInTransition(get, never):Bool;
       inline function get_isInTransition() return __coco_transitionCount.value > 0;
-    });    
+    }).fields; 
+    
+    for (f in fields)
+      if (f.isPublic || !isInterface)
+        c.addMember(f); 
   }
 
   static function stateOf(name:String)
@@ -403,7 +407,7 @@ class ModelBuilder {
       });
     }
     
-    {
+    if (!isInterface) {
       var getter = 'get_$name',
           get = switch kind {
             case KConstant: 
