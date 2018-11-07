@@ -14,6 +14,7 @@ class RunTests {
 
   static function main() {
     run(TestBatch.make([
+      new issues.Issue37(),
       new TransitionTest(),
       new ExternalTest(),
       new TodoModelTest(),
