@@ -352,10 +352,13 @@ class ModelBuilder {
       }
 
     f.publish();
+
+    var valueType = if (kind == KLoaded) macro : tink.state.Promised<$t> else t;
+
     f.kind = FProp(
       'get',
       if (settable) 'set' else 'never',
-      if (kind == KLoaded) macro : tink.state.Promised<$t> else t
+      valueType
     );
 
     function mk(t:ComplexType, ?optional:Bool):Field
@@ -387,8 +390,7 @@ class ModelBuilder {
         else macro @:pos(f.pos) init.$name;
     }
 
-    var valueType = if (kind == KLoaded) macro : tink.state.Promised<$t> else t,
-        state = stateOf(f.name);
+    var state = stateOf(f.name);
 
     if (f.isPublic) {
       observableFields.push({
@@ -471,9 +473,12 @@ class ModelBuilder {
               default: e;
             });
             
+            var ret = if (kind == KLoaded) macro : tink.core.Promise<$t> else t;
+
             var impl = 
-              if (name != null) macro function ($name:tink.core.Option<$t>) return $e; 
-              else macro function () return $e;
+              if (name != null) macro function ($name:tink.core.Option<$t>):$ret return $e; 
+              else macro function ():$ret return $e;
+
             macro @:pos(e.pos) tink.state.Observable.auto($impl);
           default:
 
