@@ -74,7 +74,7 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
       switch typeExpr(e) {
         case { expr: TConst(_) }:
           macro @:pos(e.pos) tink.state.Observable.const($e);
-        case { expr: TField(owner, FInstance(_, _, f)) } if (unify(owner.t, getType('coconut.data.Model'))):
+        case { expr: TField(owner, FInstance(_, _, f)) } if (unify(owner.t, getType('coconut.data.Model')) && getLocalMethod() != 'new')://guarding against constructor for https://github.com/MVCoconut/coconut.data/issues/37
           //TODO: a more aggressive optimization would be to look into the getter and if it merely accesses an observable, grab that ... would reduce the cost of spreading attributes into a child in coconut.ui
           var name = f.get().name;
           macro @:pos(e.pos) ${storeTypedExpr(owner)}.observables.$name;
