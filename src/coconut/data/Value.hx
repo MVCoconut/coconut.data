@@ -4,14 +4,69 @@ import tink.state.Observable;
 
 #if macro
 import haxe.macro.Context.*;
+import haxe.macro.Type;
+import haxe.macro.Expr;
+
 using haxe.macro.Tools;
 using tink.MacroApi;
+using tink.CoreApi;
 #end
 
+@:fromHxx(
+  basicType = _.value,
+  transform = coconut.data.Value.fromHxx
+)
 @:forward
-abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> {
+abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from ObservableObject<T> from tink.state.State<T> {
+
+  @:to inline function getValue():T
+    return this.value;
+
   public inline function or(fallback:Value<T>):Observable<T>
     return if (this == null) fallback else this;
+
+  macro static public function fromHxx(e:Expr) 
+    return
+      switch getExpectedType().reduce() {
+        case TAbstract(_.get().module => 'coconut.data.Value', [expected]):
+          var expectedCt = expected.toComplex();
+
+          switch e {
+            case { expr: EConst(_) }:
+              macro @:pos(e.pos) tink.state.Observable.const(($e : $expectedCt));
+            default:
+              
+              function unwrap(t:TypedExpr)
+                return switch t.expr {
+                  case TCast(t, _): unwrap(t);
+                  case TParenthesis(t): unwrap(t);
+                  case TMeta(_, t): unwrap(t);
+                  case TBlock([t]): unwrap(t);
+                  case TReturn(t): unwrap(t);
+                  default: t;
+                }
+
+              var te = unwrap(typeExpr(macro @:pos(e.pos) ($e : $expectedCt)));
+
+              //TODO: the following TypedExpr patterns seems very brittle ... better add thorough tests
+
+              function undouble(te:TypedExpr)
+                return switch te {   
+                  case { expr: TCall({ expr: TField(_, FStatic(_.get().module => 'tink.state.Observable' | 'tink.state.State', _.get().name => 'get_value')) }, [value]) }:
+                    Some(value);
+                  default: None;
+                }
+
+              switch te {
+                case undouble(_) => Some(e): storeTypedExpr(e); 
+                //TODO: add case to optimize attribute and model access
+                default:
+                  macro @:pos(e.pos) tink.state.Observable.auto(function ():$expectedCt return $e);
+              }
+          }
+
+        default: e.reject('something went horribly wrong');
+      }
 
   @:from macro static function lift(e) {
     //TODO: be a bit smarter about detecting constants and also make sure literal `null` is handled properly
