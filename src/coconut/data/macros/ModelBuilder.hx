@@ -231,10 +231,10 @@ class ModelBuilder {
       }
       public var observables(default, never):$observables;
       public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
-      var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
-      var __coco_transitionCount(default, never):tink.state.State<Int>;
+      @:noCompletion var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
+      @:noCompletion var __coco_transitionCount(default, never):tink.state.State<Int>;
       public var isInTransition(get, never):Bool;
-      inline function get_isInTransition() return __coco_transitionCount.value > 0;
+      @:noCompletion inline function get_isInTransition() return __coco_transitionCount.value > 0;
     }).fields; 
     
     for (f in fields)
