@@ -476,8 +476,8 @@ class ModelBuilder {
             var ret = if (kind == KLoaded) macro : tink.core.Promise<$t> else t;
 
             var impl = 
-              if (name != null) macro function ($name:tink.core.Option<$t>):$ret return $e; 
-              else macro function ():$ret return $e;
+              if (name != null) macro @:pos(e.pos) function ($name:tink.core.Option<$t>):$ret return $e; 
+              else macro @:pos(e.pos) function ():$ret return $e;
 
             macro @:pos(e.pos) tink.state.Observable.auto($impl);
           default:
