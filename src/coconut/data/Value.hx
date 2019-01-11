@@ -25,48 +25,54 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
   public inline function or(fallback:Value<T>):Observable<T>
     return if (this == null) fallback else this;
 
-  macro static public function fromHxx(e:Expr) 
+  macro static public function fromHxx(e:Expr) {
+    
+    function generate(expected:Type) {
+      var expectedCt = expected.toComplex();
+
+      return switch e {
+        case { expr: EConst(_) }:
+          macro @:pos(e.pos) tink.state.Observable.const(($e : $expectedCt));
+        default:
+          
+          function unwrap(t:TypedExpr)
+            return switch t.expr {
+              case TCast(t, _): unwrap(t);
+              case TParenthesis(t): unwrap(t);
+              case TMeta(_, t): unwrap(t);
+              case TBlock([t]): unwrap(t);
+              case TReturn(t): unwrap(t);
+              default: t;
+            }
+
+          var te = unwrap(typeExpr(macro @:pos(e.pos) ($e : $expectedCt)));
+
+          //TODO: the following TypedExpr patterns seems very brittle ... better add thorough tests
+
+          function undouble(te:TypedExpr)
+            return switch te {   
+              case { expr: TCall({ expr: TField(_, FStatic(_.get().module => 'tink.state.Observable' | 'tink.state.State', _.get().name => 'get_value')) }, [value]) }:
+                Some(value);
+              default: None;
+            }
+
+          switch te {
+            case undouble(_) => Some(e): storeTypedExpr(e); 
+            //TODO: add case to optimize attribute and model access
+            default:
+              macro @:pos(e.pos) tink.state.Observable.auto(function ():$expectedCt return $e);
+          }
+      }
+
+    }
     return
       switch getExpectedType().reduce() {
         case TAbstract(_.get().module => 'coconut.data.Value', [expected]):
-          var expectedCt = expected.toComplex();
-
-          switch e {
-            case { expr: EConst(_) }:
-              macro @:pos(e.pos) tink.state.Observable.const(($e : $expectedCt));
-            default:
-              
-              function unwrap(t:TypedExpr)
-                return switch t.expr {
-                  case TCast(t, _): unwrap(t);
-                  case TParenthesis(t): unwrap(t);
-                  case TMeta(_, t): unwrap(t);
-                  case TBlock([t]): unwrap(t);
-                  case TReturn(t): unwrap(t);
-                  default: t;
-                }
-
-              var te = unwrap(typeExpr(macro @:pos(e.pos) ($e : $expectedCt)));
-
-              //TODO: the following TypedExpr patterns seems very brittle ... better add thorough tests
-
-              function undouble(te:TypedExpr)
-                return switch te {   
-                  case { expr: TCall({ expr: TField(_, FStatic(_.get().module => 'tink.state.Observable' | 'tink.state.State', _.get().name => 'get_value')) }, [value]) }:
-                    Some(value);
-                  default: None;
-                }
-
-              switch te {
-                case undouble(_) => Some(e): storeTypedExpr(e); 
-                //TODO: add case to optimize attribute and model access
-                default:
-                  macro @:pos(e.pos) tink.state.Observable.auto(function ():$expectedCt return $e);
-              }
-          }
-
-        default: e.reject('something went horribly wrong');
+          generate(expected);
+        case t: 
+          generate(t);//not sure if doing it for all types is really the best choice
       }
+  }
 
   @:from macro static function lift(e) {
     //TODO: be a bit smarter about detecting constants and also make sure literal `null` is handled properly
