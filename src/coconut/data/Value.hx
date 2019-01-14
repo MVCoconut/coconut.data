@@ -14,7 +14,7 @@ using tink.CoreApi;
 
 @:fromHxx(
   basicType = _.value,
-  transform = coconut.data.Value.fromHxx
+  transform = coconut.data.Value.fromHxx(_)
 )
 @:forward
 abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from ObservableObject<T> from tink.state.State<T> {
