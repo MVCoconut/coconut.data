@@ -20,8 +20,22 @@ Models are quite restrictive about what kind of properties they allow. Currently
 - `@:loaded` - not unlike a computed property, but the computation is asynchronous - the last value is accessible as `Option` via `$last`
 - `@:external` - the module consumes an `Observable` upon construction and exposes it as if it were its own
 - `@:shared` - the module consumes a `State` upon construction and exposes it as if it were its own
+- `@:signal` - this actually just uses [signal syntax from tink_lang](https://haxetink.github.io/tink_lang/#/declaration-sugar/notifiers?id=notifiers). In short:
 
-The first three are physically existent on the model, while the latter two are dependent values. Let's see how we might use them:
+  ```haxe
+  class Example implements Model {
+    @:signal var foo:String;
+  }
+  // corresponds to:
+  class Example implements Model {
+    public var foo(get, never):tink.core.Signal<String>;
+    var _foo:SignalTrigger<String>;
+  }
+  ```
+
+  External code can subscribe via `example.foo.handle(function (event) { /* something ... */})`. Relying strongly on [signals](https://haxetink.github.io/tink_core/#/types/signal) in coconut is usually a code smell, but it's supported for reasons of practicality.
+
+Properties that are `@:constant`, `@:observable` or `@:editable` are physically existent on the model, while `@:computed` and `@:loaded` are derived values. Let's see how we might use them:
 
 ```haxe
 class TodoItem implements Model {
@@ -37,7 +51,7 @@ class TodoItem implements Model {
 
 By default, the model's constructor is auto generated to accept any of the physical properties (unless they're initialized directly) and to require them if no default is provided. As for `@:computed` and `@:loaded` properties we see that the computation to determine their value is defined on the right side of their declaration.
 
-This will result in a class with the following signature (accessors omitted for simplicity):
+The above definition will result in a class with the following signature (accessors omitted for simplicity):
 
 ```haxe
 class TodoItem implements Model {
@@ -219,6 +233,17 @@ Technically you can do things like `@:transition(return Date.now().getTime())` b
 ### Synchronization
 
 ... is also planned ...
+
+## Comparators
+
+Both `@:editable` and `@:observable` fields support comparators that determine whether two values are considered equal. The previous value is `prev` and the next value is `next`. Example:
+
+```haxe
+@:comparator(Type.enumEq(prev, next))
+@:editable var color:Option<String>;
+```
+
+This means that `model.color = Some('pink')` will not trigger if the value already was `Some('pink')`.
 
 ## Custom Constructors
 

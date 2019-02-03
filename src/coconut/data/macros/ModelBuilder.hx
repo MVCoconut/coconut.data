@@ -251,10 +251,14 @@ class ModelBuilder {
     ':noCompletion' => true
   ];
 
-  function addMethod(f:Member, func:Function)
-    switch [for (m in f.meta) if (!ALLOWED[m.name]) m] {
-      case []:
+  function addMethod(f:Member, func:Function) {
+    
+    for (m in f.meta)
+      if (m.name.charAt(0) == ':' && !allowedOnFunctions[m.name])
+        m.pos.error('@${m.name} not allowed in models');//TODO: make suggestions
 
+    switch f.metaNamed(TRANSITION) {
+      case []:
       case [{ name: TRANSITION, params: params, pos: pos }]:
 
         if (patchFields.length == 0)
@@ -289,20 +293,13 @@ class ModelBuilder {
           var blank = func.expr.pos.makeBlankType();
           macro : tink.core.Promise<$blank>;
         }
-
-      case v:
-        switch f.metaNamed(TRANSITION) {
-          case [] | [_]:
-          case v: v[1].pos.error('Can only have one @$TRANSITION per function');
-        }
-
-        for (m in v)
-          if (m.name.charAt(0) == ':' && !allowedOnFunctions[m.name])
-            m.pos.error('Tag ${m.name} not allowed');//This is perhaps not the best choice
+      case v: v[1].pos.error('Can only have one @$TRANSITION per function');
     }
+    
+  }
 
   static var allowedOnFields = [for (m in [':forward']) m => true];
-  static var allowedOnFunctions = [for (m in [TRANSITION, ':keep', ':extern', ':deprecated']) m => true];
+  static var allowedOnFunctions = [for (m in [TRANSITION, ':keep', ':extern', ':deprecated', ':noCompletion']) m => true];
 
   function addField(f:Member, t:ComplexType, e:Expr) {
     if (t == null) 
