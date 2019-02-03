@@ -6,6 +6,8 @@ package coconut.data.macros;
 
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import coconut.data.macros.Models.*;
+
 using tink.MacroApi;
 using tink.CoreApi;
 using Lambda;
@@ -510,10 +512,10 @@ class ModelBuilder {
     for (m in f.meta) {
 
       switch m.name {
-        case ':skipCheck': 
+        case SKIP_CHECK: 
         
           if (skipCheck)
-            m.pos.error('duplicate @:skipCheck');
+            m.pos.error('duplicate @$SKIP_CHECK');
           else 
             skipCheck = true;
 

@@ -442,3 +442,21 @@ class WithLast implements Model {
     default: o;
   });
 }
+
+class Stuff implements coconut.data.Model {
+  // issue #12:
+    @:editable var foo:MyEnum = MyEnum.None;
+    @:editable var bar:MyEnum2 = None;
+
+  //issue #36
+    @:editable var thisIsFine:ThisIsFine = null;
+}
+
+@:skipCheck class ThisIsFine {}
+
+enum MyEnum {
+  None;
+  Some(e:MyEnum);
+}
+
+typedef MyEnum2 = Option<MyEnum2>;

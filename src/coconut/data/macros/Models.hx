@@ -67,13 +67,16 @@ class Models {
             default: false;
           };
       }
+
+  static public inline var OBSERVABLE = ':observable';
+  static public inline var SKIP_CHECK = ':skipCheck';
   
   static function checkMany(params:Array<Type>) 
     return [for (p in params) for (s in check(p)) s];
 
   static public function check(t:Type):Array<String>
     return 
-      switch t.reduce() {
+      switch t {
         case TAnonymous(_.get().fields => fields):
           var ret = [];
           for (f in fields)
@@ -99,11 +102,15 @@ class Models {
           ):
             checkMany(params);
         case TAbstract(_.get().meta => m, params)
+           | TType(_.get().meta => m, params)
            | TEnum(_.get().meta => m, params)
-           | TInst(_.get().meta => m, params) if (m.has(':pure') || m.has(':observable')):
+           | TInst(_.get().meta => m, params) if (m.has(':pure') || m.has(OBSERVABLE) || m.has(SKIP_CHECK)):
 
           checkMany(params);
         case TEnum(_.get() => e, params):
+
+          e.meta.add(SKIP_CHECK, [], e.pos);
+
           var ret = [];
           for (c in e.constructs) 
             switch c.type.reduce() {
@@ -114,8 +121,10 @@ class Models {
               default:
             }
 
+          e.meta.remove(SKIP_CHECK);
+
           if (ret.length == null)
-            e.meta.add(':observable', [], e.pos);
+            e.meta.add(OBSERVABLE, [], e.pos);
 
           ret.concat(checkMany(params));
 
@@ -123,7 +132,16 @@ class Models {
            | TInst(_.get() => { pack: pack, name: name }, params) 
              if (considerValid(pack, name)):
           checkMany(params);
-        case TDynamic(null): [];
+        case TDynamic(null): [];//personally, I'm inclined to disallow this
+        case TLazy(_): 
+          check(t.reduce(true));
+        case TType(_.get() => alias, params):
+          alias.meta.add(SKIP_CHECK, [], alias.pos);
+          var ret = check(t.reduce(true));
+          alias.meta.remove(SKIP_CHECK);
+          ret.concat(checkMany(params)).map(function (s) 
+            return t.toString() + ' is not acceptable coconut data, because $s'
+          );
         case v:
           [t.toString() + ' is not acceptable coconut data'];
       }
