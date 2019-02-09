@@ -25,6 +25,7 @@ using Lambda;
 class ModelBuilder {
 
   var c:ClassBuilder;
+  var className:String;
   var isInterface:Bool;
 
   var argFields:Array<Field> = [];
@@ -43,6 +44,7 @@ class ModelBuilder {
   public function new(c, ctor) {
     //TODO: put `observables` into a class if `!isInterface`
     this.c = c;
+    this.className = Models.classId(c.target);
     this.isInterface = c.target.isInterface;
 
     for (f in c)
@@ -311,10 +313,7 @@ class ModelBuilder {
     var info = fieldInfo(f);
 
     if (!info.skipCheck)
-      switch Models.check(f.pos.getOutcome(t.toType())) {
-        case []:
-        case v: f.pos.error(v[0]);
-      }
+      Models.checkLater(f.name, className);
 
     var name = f.name,
         kind = info.kind;

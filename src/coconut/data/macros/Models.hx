@@ -58,7 +58,7 @@ class Models {
   static function considerValid(pack:Array<String>, name:String) 
     return
       switch pack.concat([name]).join('.') {
-        case  'Date' | 'Int' | 'String' | 'Bool' | 'Float' | 'Array' | 'Null': true;
+        case  'Date' | 'Int' | 'String' | 'Bool' | 'Float' | 'Null': true;
         case 'tink.pure.List': true;
         case 'tink.Url': true;
         default: 
@@ -73,6 +73,50 @@ class Models {
   
   static function checkMany(params:Array<Type>) 
     return [for (p in params) for (s in check(p)) s];
+
+  static var registered = false;
+  static var delayedChecks = new Map();
+
+  static public function classId(cl:ClassType)
+    return cl.module + '.' + cl.name;
+  
+  static public function checkLater(field:String, ?className:String) {
+
+    var target = switch className {
+      case null: classId(Context.getLocalClass().get());
+      case v: v;
+    }
+
+    var checks = switch delayedChecks[target] {
+      case null: delayedChecks[target] = new Map();
+      case v: v;
+    }
+
+    checks[field] = true;
+
+    if (!registered) {
+      registered = true;
+      Context.onGenerate(function (types) {
+        registered = false;
+        for (t in types)
+          switch t {
+
+            case TInst(_.get() => cl, _):
+              switch delayedChecks[classId(cl)] {
+                case null:
+                case checks:
+                  for (f in cl.fields.get())
+                    if (checks[f.name]) switch check(f.type) {
+                      case []: 
+                      case v: f.pos.error(v[0]);
+                    }
+              }
+
+            default:
+          }
+      });
+    }
+  }
 
   static public function check(t:Type):Array<String>
     return 
