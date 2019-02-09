@@ -58,7 +58,7 @@ class Models {
   static function considerValid(pack:Array<String>, name:String) 
     return
       switch pack.concat([name]).join('.') {
-        case  'Date' | 'Int' | 'String' | 'Bool' | 'Float': true;
+        case  'Date' | 'Int' | 'String' | 'Bool' | 'Float' | 'Array' | 'Null': true;
         case 'tink.pure.List': true;
         case 'tink.Url': true;
         default: 

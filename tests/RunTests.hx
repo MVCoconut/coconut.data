@@ -452,7 +452,7 @@ class Stuff implements coconut.data.Model {
     @:editable var thisIsFine:ThisIsFine = null;
 
   @:signal var string:String;
-
+  @:editable var nullable:Null<Int>;
 }
 
 @:skipCheck class ThisIsFine {}
