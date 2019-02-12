@@ -134,7 +134,6 @@ class Models {
 
           ret;  
         case TFun(_, _): [];   
-        case TAbstract(_.get() => a, _) if (!a.meta.has(':coreType') && check(a.type).length == 0): []; 
         case TAbstract(_.get().meta.has(':enum') => true, _): [];
         case TInst(_.get().kind => KTypeParameter(_), _): [];
         case TInst(_.get() => { pack: ['tink', 'state'], name: 'ObservableArray' | 'ObservableMap' }, params): checkMany(params);
@@ -151,6 +150,7 @@ class Models {
            | TInst(_.get().meta => m, params) if (m.has(':pure') || m.has(OBSERVABLE) || m.has(SKIP_CHECK)):
 
           checkMany(params);
+        case TAbstract(_.get() => a, _) if (!a.meta.has(':coreType') && check(a.type).length == 0): []; 
         case TEnum(_.get() => e, params):
 
           e.meta.add(SKIP_CHECK, [], e.pos);
