@@ -186,6 +186,8 @@ class Models {
           ret.concat(checkMany(params)).map(function (s) 
             return t.toString() + ' is not acceptable coconut data, because $s'
           );
+        case TInst(_.get() => {kind: KExpr(_)}, _): // const type param
+          [];
         case v:
           [t.toString() + ' is not acceptable coconut data'];
       }
