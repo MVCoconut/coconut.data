@@ -5,15 +5,24 @@ class ValidationTest {
   public function new() {}
   
   public function test() {
-    new ConstTypeParameter({t: 'test', a: 'test'});
+    new ConstTypeParameter();
     return asserts.done();
   }
 }
 
 private class ConstTypeParameter implements coconut.data.Model {
-	@:constant var t:TypeDef<255>;
-	@:constant var a:Abstract;
+	@:constant var c:Const<255> = null;
+	@:constant var ac:AbstractConst = null;
+	@:constant var r:Recursive = null;
+	@:constant var sr:SelfReferenced<String> = null;
+	@:constant var asr:AbstractSelfReferenced = null;
 }
 
-private abstract Abstract(TypeDef<255>) from String {}
-private typedef TypeDef<@:const P> = String;
+private abstract AbstractConst(Const<255>) {}
+private typedef Const<@:const P> = String;
+
+private typedef Recursive = {var r(default, never):Recursive;}
+
+private abstract AbstractSelfReferenced(SelfReferenced<AbstractSelfReferenced>) {}
+private typedef SelfReferenced<T> = {var self(default, never):T;}
+
