@@ -21,6 +21,7 @@ class RunTests {
       new SelectionTest(),
       new CustomConstructorTest(),
       new LastTest(),
+      new ValidationTest(),
     ])).handle(exit);
     var a:InitialArgs<TransitionModel> = {};
     a = { value: 12 };
