@@ -25,4 +25,3 @@ private typedef Recursive = {var r(default, never):Recursive;}
 
 private abstract AbstractSelfReferenced(SelfReferenced<AbstractSelfReferenced>) {}
 private typedef SelfReferenced<T> = {var self(default, never):T;}
-

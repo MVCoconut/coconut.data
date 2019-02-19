@@ -134,7 +134,6 @@ class Models {
 
           ret;  
         case TFun(_, _): [];   
-        case TAbstract(_.get() => a, _) if (!a.meta.has(':coreType') && check(a.type).length == 0): []; 
         case TAbstract(_.get().meta.has(':enum') => true, _): [];
         case TInst(_.get().kind => KTypeParameter(_), _): [];
         case TInst(_.get() => { pack: ['tink', 'state'], name: 'ObservableArray' | 'ObservableMap' }, params): checkMany(params);
@@ -179,10 +178,10 @@ class Models {
         case TDynamic(null): [];//personally, I'm inclined to disallow this
         case TLazy(_): 
           check(t.reduce(true));
-        case TType(_.get() => alias, params):
-          alias.meta.add(SKIP_CHECK, [], alias.pos);
-          var ret = check(t.reduce(true));
-          alias.meta.remove(SKIP_CHECK);
+        case TType(_.get() => { pos: pos, meta: meta }, params), TAbstract(_.get() => { pos: pos, meta: meta }, params):
+          meta.add(SKIP_CHECK, [], pos);
+          var ret = check(Context.followWithAbstracts(t, true));
+          meta.remove(SKIP_CHECK);
           ret.concat(checkMany(params)).map(function (s) 
             return t.toString() + ' is not acceptable coconut data, because $s'
           );
