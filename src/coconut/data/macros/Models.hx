@@ -160,14 +160,12 @@ class Models {
               case TFun(args, _):
                 for (a in args)
                   for (s in check(a.t)) 
-                    ret.push('Enum ${e.name} is not acceptable coconut data because $s for argument ${c.name}.${a.name}');
+                    ret.push('Enum ${e.name} is not observable because $s for argument ${c.name}.${a.name}');
               default:
             }
 
-          e.meta.remove(SKIP_CHECK);
-
-          if (ret.length == null)
-            e.meta.add(OBSERVABLE, [], e.pos);
+          if (ret.length > 0)
+            e.meta.remove(SKIP_CHECK);
 
           ret.concat(checkMany(params));
 
@@ -178,17 +176,22 @@ class Models {
         case TDynamic(null): [];//personally, I'm inclined to disallow this
         case TLazy(_): 
           check(t.reduce(true));
-        case TType(_.get() => { pos: pos, meta: meta }, params), TAbstract(_.get() => { pos: pos, meta: meta }, params):
+        case TType(_.get() => { pos: pos, meta: meta, name: name }, params), TAbstract(_.get() => { pos: pos, meta: meta, name: name }, params):
+          
           meta.add(SKIP_CHECK, [], pos);
-          var ret = check(Context.followWithAbstracts(t, true));
-          meta.remove(SKIP_CHECK);
+          
+          var ret = check(Context.followWithAbstracts(t, true));//On @:coreType, following returns the type itself, which will then pass via the above in the @:skipCheck branch
+          
+          if (ret.length > 0)
+            meta.remove(SKIP_CHECK);
+          
           ret.concat(checkMany(params)).map(function (s) 
-            return t.toString() + ' is not acceptable coconut data, because $s'
+            return t.toString() + ' is not observable, because $s'
           );
         case TInst(_.get() => {kind: KExpr(_)}, _): // const type param
           [];
         case v:
-          [t.toString() + ' is not acceptable coconut data'];
+          [t.toString() + ' is not observable'];
       }
   #end
 }
