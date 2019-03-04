@@ -47,6 +47,14 @@ class ModelBuilder {
     this.className = Models.classId(c.target);
     this.isInterface = c.target.isInterface;
 
+    switch c.target.superClass {
+      case null:
+      case _.t.get() => cl:
+        for (i in cl.interfaces) 
+          if (i.t.toString() == 'coconut.data.Model')
+            c.target.pos.error('cannot extend models');
+    }
+
     for (f in c)
       if (!f.isStatic)
         switch f.kind {
@@ -57,7 +65,7 @@ class ModelBuilder {
             }
           case FProp(_, _, _, _): 
             f.pos.error('Custom properties may only use `get`, `set` and `never` access.');
-          case FVar(t, e) if (!f.meta.exists(function (m) return m.name == ':signal')):
+          case FVar(t, e) if (!f.meta.exists(function (m) return m.name == ':signal' || m.name == ':untracked')):
             addField(f, t, e);
           default:
         }
@@ -73,6 +81,15 @@ class ModelBuilder {
         }      
 
     addBoilerPlate();
+
+    #if haxe4
+    for (f in c)
+      switch f.kind {
+        case FProp('default', 'never', _, _):
+          f.isFinal = true;
+        default:
+      }
+    #end
 
     if (!isInterface) 
       buildConstructor(ctor);
@@ -263,44 +280,57 @@ class ModelBuilder {
       case []:
       case [{ name: TRANSITION, params: params, pos: pos }]:
 
-        if (patchFields.length == 0)
-          pos.error('Cannot have transitions when there are no @:observable fields');
+        if (isInterface) {
+          var ret = switch func.ret {
+            case null: macro : tink.core.Noise;
+            case v: v;
+          }
 
-        f.publish();
-        
-        var ret = macro (Noise: tink.core.Noise);
-
-        for (p in params)
-          switch p {
-            case macro return $e: ret = e;
-            case macro synchronize: p.reject('synchronization not yet implemented');
-            case macro synchronize = $_: p.reject('synchronization not yet implemented');
-            default: p.reject('This expression is not allowed here');
-          }          
-
-        var body = switch func.expr {
-          case null: pos.error('function body required');
-          case e: e.transform(function (e) return switch e {
-            case macro @patch $v: macro @:pos(v.pos) ($v : $patchType);
-            default: e;
-          });
+          if (params.length > 0)
+            params[0].reject('@:transition customization not allowed on interfaces');
+          
+          func.ret = macro : tink.core.Promise<$ret>;
         }
+        else {
+          if (patchFields.length == 0)
+            pos.error('Cannot have transitions when there are no @:observable fields');
 
-        func.expr = macro @:pos(func.expr.pos) 
-          return 
-            __cocoupdate((function ():tink.core.Promise<$patchType> $body)())
-            .next(function (_) return $ret);
+          f.publish();
+          
+          var ret = macro (Noise: tink.core.Noise);
 
-        func.ret = {
-          var blank = func.expr.pos.makeBlankType();
-          macro : tink.core.Promise<$blank>;
+          for (p in params)
+            switch p {
+              case macro return $e: ret = e;
+              case macro synchronize: p.reject('synchronization not yet implemented');
+              case macro synchronize = $_: p.reject('synchronization not yet implemented');
+              default: p.reject('This expression is not allowed here');
+            }          
+
+          var body = switch func.expr {
+            case null: pos.error('function body required');
+            case e: e.transform(function (e) return switch e {
+              case macro @patch $v: macro @:pos(v.pos) ($v : $patchType);
+              default: e;
+            });
+          }
+
+          func.expr = macro @:pos(func.expr.pos) 
+            return 
+              __cocoupdate((function ():tink.core.Promise<$patchType> $body)())
+              .next(function (_) return $ret);
+
+          func.ret = {
+            var blank = func.expr.pos.makeBlankType();
+            macro : tink.core.Promise<$blank>;
+          }
         }
       case v: v[1].pos.error('Can only have one @$TRANSITION per function');
     }
     
   }
 
-  static var allowedOnFields = [for (m in [':forward']) m => true];
+  static var allowedOnFields = [for (m in [':forward', ':noCompletion']) m => true];
   static var allowedOnFunctions = [for (m in [TRANSITION, ':keep', ':extern', ':deprecated', ':noCompletion']) m => true];
 
   function addField(f:Member, t:ComplexType, e:Expr) {
@@ -562,7 +592,7 @@ class ModelBuilder {
     var builder = new ClassBuilder(fields);
 
     new ModelBuilder(builder, ctor);
-
+    
     return builder.export();
   }
 }
