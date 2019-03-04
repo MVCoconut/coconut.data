@@ -5,7 +5,8 @@
   "scripts": {
     "travix": "haxe -lib travix --run travix.Travix",
     "haxelib": "haxelib",
-    "postinstall": "lix download"
+    "postinstall": "lix download",
+    "test": "lix run travix node"
   },
   "dependencies": {
     "lix": "=15.3.0-alpha.1"
