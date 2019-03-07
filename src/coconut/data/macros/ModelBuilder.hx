@@ -201,7 +201,7 @@ class ModelBuilder {
     
     for (f in patchFields) {
       var name = f.name;
-      updates.push(macro if (delta.$name != null) $i{stateOf(name)}.set(delta.$name));
+      updates.push(macro if (existent.$name != null) $i{stateOf(name)}.set(delta.$name));
     }
 
     var sparse = TAnonymous([for (f in patchFields) {//this is a workaround for Haxe issue #6316 and also enables settings fields to null
@@ -236,13 +236,9 @@ class ModelBuilder {
           if(!sync) __coco_transitionCount.set(__coco_transitionCount.value - 1);
           switch o {
             case Success(delta): 
-              var sparse = new haxe.DynamicAccess<tink.core.Ref<Any>>(),
-                  delta:haxe.DynamicAccess<Any> = cast delta;
-
-              for (k in delta.keys())
-                sparse[k] = tink.core.Ref.to(delta[k]);
-              var delta:$sparse = cast sparse; 
-              $b{updates};
+              var existent = tink.Anon.existentFields(delta);
+              $b{updates};              
+              this._updatePerformed.trigger(delta);
             case Failure(e): errorTrigger.trigger(e);
           }
         });
@@ -250,6 +246,7 @@ class ModelBuilder {
         if(!sync) __coco_transitionCount.set(__coco_transitionCount.value + 1);
         return ret;
       }
+      @:signal var updatePerformed:$patchType;
       public var observables(default, never):$observables;
       public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
       @:noCompletion var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;

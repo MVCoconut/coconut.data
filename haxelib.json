@@ -19,6 +19,7 @@
 	"dependencies": {
 		"tink_state": "",
 		"tink_lang": "",
-		"tink_pure": ""
+		"tink_pure": "",
+		"tink_anon": ""
 	}
 }
