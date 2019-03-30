@@ -201,7 +201,7 @@ class ModelBuilder {
     
     for (f in patchFields) {
       var name = f.name;
-      updates.push(macro if (existent.$name != null) $i{stateOf(name)}.set(delta.$name));
+      updates.push(macro if (Reflect.hasField(existent, $v{name})) $i{stateOf(name)}.set(delta.$name));
     }
 
     var sparse = TAnonymous([for (f in patchFields) {//this is a workaround for Haxe issue #6316 and also enables settings fields to null
