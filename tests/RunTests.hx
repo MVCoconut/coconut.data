@@ -188,6 +188,7 @@ class SelectionTest {
     return test.done();
   }  
 
+  #if((haxe_ver < 4) && php) @:exclude #end // php was buggy in haxe3
   @:describe("  non-optional")
   public function testNonOptional(test:AssertionBuffer) {
     var s = Selection.of(options[0]).or(options.slice(1));
