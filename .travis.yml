@@ -1,18 +1,49 @@
 sudo: required
 dist: trusty
 
+stages:
+  - test
+  - deploy
+
 language: node_js
-node_js: 6
+node_js: 8
+
+cache:
+  directories:
+    - $HOME/haxe
 
 os:
   - linux
-      
-install:
-  - npm install
+  # - osx
 
+env:
+  - HAXE_VERSION=3.4.7
+  - HAXE_VERSION=latest
+  
+install:
+  - npm i -g lix
+  - lix install haxe $HAXE_VERSION
+  - lix download
+  
 script:
-  - npm run travix neko
-  - npm run travix node
-  #- npm run travix php .
-  - npm run travix js
-  - npm run travix python
+  - lix run travix interp
+  - lix run travix neko
+  - lix run travix node
+  - lix run travix js
+  - lix run travix php
+  - lix run travix python
+
+# jobs:
+#   include:l
+#     # - stage: test # should uncomment this when there is no matrix above (e.g. only one os, one env, etc)
+#     - stage: deploy
+#       os: linux
+#       install:
+#         - npm i -g lix
+#         - lix download
+#       script: skip
+#       env:
+#         secure: xxxx
+#       after_success:
+#         - lix run travix install
+#         - lix run travix release
