@@ -170,6 +170,7 @@ class SelectionTest {
     return test.done();
   }
 
+  #if ((haxe_ver < 4) && interp) @:exclude #end // FIXME: stack overflow for the old interpreter
   @:describe("  with unselect")
   public function singleWithUnselect(test:AssertionBuffer) {
     var s = Selection.single(options, { canUnselect: true });
@@ -217,6 +218,7 @@ class SelectionTest {
 class TodoModelTest {
   public function new() {}
 
+  #if ((haxe_ver < 4) && interp) @:exclude #end // FIXME: stack overflow for the old interpreter
   @:describe("@:transition") 
   public function testTransitions(test:AssertionBuffer) {
     var rates = new Rates();
