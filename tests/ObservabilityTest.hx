@@ -13,6 +13,7 @@ class Container implements coconut.data.Model {
 	@:constant var f:Final = null;
 	#end
 	@:constant var v:NeverWrite = null;
+	@:constant var m:Function = null;
 }
 
 private class Object implements coconut.data.Model {}
@@ -33,5 +34,13 @@ private class NeverWrite {
 	var f(default, never):Float;
 	var s(default, never):String;
 	var o(default, never):Object;
+}
+
+private class Function {
+	function i():Int throw 'empty';
+	function b():Bool throw 'empty';
+	function f():Float throw 'empty';
+	function s():String throw 'empty';
+	function o():Object throw 'empty';
 }
 
