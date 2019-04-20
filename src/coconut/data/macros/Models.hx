@@ -190,8 +190,28 @@ class Models {
           );
         case TInst(_.get() => {kind: KExpr(_)}, _): // const type param
           [];
+        case t = TInst(_.get() => cls, params):
+          var candidates = params;
+          if(cls.superClass != null) candidates.push(TInst(cls.superClass.t, cls.superClass.params));
+          var ret = checkMany(candidates);
+          for(field in cls.fields.get()) {
+            if(isImmutable(field)) ret = ret.concat(check(field.type))
+            else ret.push('${t.toString()} is not observable because the field "${field.name}" is mutable');
+          }
+          ret;
+          
         case v:
           [t.toString() + ' is not observable'];
+      }
+      
+      static function isImmutable(field:ClassField):Bool {
+        return
+          field.isFinal || 
+          switch field.kind {
+            case FVar(_, write): write == AccNever;
+            case FMethod(kind): kind != MethDynamic;
+            case _: false;
+          }
       }
   #end
 }
