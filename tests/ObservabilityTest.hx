@@ -9,12 +9,15 @@ class ObservabilityTest {
 }
 
 class Container implements coconut.data.Model {
+	#if haxe4
 	@:constant var f:Final = null;
+	#end
 	@:constant var v:NeverWrite = null;
 }
 
 private class Object implements coconut.data.Model {}
 
+#if haxe4
 private class Final {
 	final i:Int = 0;
 	final b:Bool = false;
@@ -22,6 +25,7 @@ private class Final {
 	final s:String = '';
 	final o:Object = null;
 }
+#end
 
 private class NeverWrite {
 	var i(default, never):Int;
