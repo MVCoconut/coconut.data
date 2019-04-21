@@ -34,6 +34,8 @@ private class NeverWrite {
 	var f(default, never):Float;
 	var s(default, never):String;
 	var o(default, never):Object;
+	var directRecursive(default, never):NeverWrite;
+	var indirectRecursive(default, never):Function;
 }
 
 private class Function {
@@ -42,5 +44,7 @@ private class Function {
 	function f():Float throw 'empty';
 	function s():String throw 'empty';
 	function o():Object throw 'empty';
+	function directRecursive():Function throw 'empty';
+	function indirectRecursive():NeverWrite throw 'empty';
 }
 
