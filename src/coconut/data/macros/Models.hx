@@ -212,7 +212,6 @@ class Models {
           switch field.kind {
             case FVar(_, write): write == AccNever;
             case FMethod(kind): kind != MethDynamic;
-            case _: false;
           }
       }
   #end
