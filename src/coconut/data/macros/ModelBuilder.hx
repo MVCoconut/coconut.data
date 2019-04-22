@@ -201,7 +201,7 @@ class ModelBuilder {
     
     for (f in patchFields) {
       var name = f.name;
-      updates.push(macro if (Reflect.hasField(existent, $v{name})) $i{stateOf(name)}.set(delta.$name));
+      updates.push(macro if (existent.$name) $i{stateOf(name)}.set(delta.$name));
     }
 
     var sparse = TAnonymous([for (f in patchFields) {//this is a workaround for Haxe issue #6316 and also enables settings fields to null
@@ -227,6 +227,16 @@ class ModelBuilder {
     });
     var observables = TAnonymous(observableFields);
 
+    var delta = TAnonymous([for (f in patchFields) {
+      name: f.name,
+      pos: f.pos,
+      meta: f.meta,
+      kind: switch f.kind {
+        case FProp('default', 'never', t = TFunction(_)):
+          FProp('default', 'never', macro : coconut.data.Model.FunctionReference<$t>);
+        case v: v;
+      },
+    }]);// workaround for https://github.com/HaxeFoundation/haxe/issues/6316 \o/
     var fields:Array<Member> = (macro class {
       @:noCompletion function __cocoupdate(ret:tink.core.Promise<$patchType>) {
         var sync = true;
@@ -236,6 +246,7 @@ class ModelBuilder {
           if(!sync) __coco_transitionCount.set(__coco_transitionCount.value - 1);
           switch o {
             case Success(delta): 
+              var delta:$delta = delta;
               var existent = tink.Anon.existentFields(delta);
               $b{updates};              
               this._updatePerformed.trigger(delta);
