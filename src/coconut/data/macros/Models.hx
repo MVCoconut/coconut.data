@@ -177,42 +177,56 @@ class Models {
         case TLazy(_): 
           check(t.reduce(true));
         case TType(_.get() => { pos: pos, meta: meta, name: name }, params), TAbstract(_.get() => { pos: pos, meta: meta, name: name }, params):
-          
-          meta.add(SKIP_CHECK, [], pos);
-          
-          var ret = check(Context.followWithAbstracts(t, true));//On @:coreType, following returns the type itself, which will then pass via the above in the @:skipCheck branch
-          
-          if (ret.length > 0)
-            meta.remove(SKIP_CHECK);
-          
-          ret.concat(checkMany(params)).map(function (s) 
-            return t.toString() + ' is not observable, because $s'
-          );
+          recurse(
+            meta, 
+            check.bind(Context.followWithAbstracts(t, true)) //On @:coreType, following returns the type itself, which will then pass via the above @:skipCheck branch
+          )
+            .concat(checkMany(params)).map(function (s) 
+              return t.toString() + ' is not observable, because $s'
+            );
         case TInst(_.get() => {kind: KExpr(_)}, _): // const type param
           [];
         case t = TInst(_.get() => cls, params):
-          var candidates = params;
-          if(cls.superClass != null) candidates.push(TInst(cls.superClass.t, cls.superClass.params));
-          var ret = checkMany(candidates);
-          for(field in cls.fields.get()) {
-            if(isImmutable(field)) ret = ret.concat(check(field.type))
-            else ret.push('${t.toString()} is not observable because the field "${field.name}" is mutable');
-          }
-          ret;
           
+          recurse(cls.meta, function () {
+            
+            var ret = switch cls.superClass {
+              case null: [];
+              case c: check(TInst(cls.superClass.t, cls.superClass.params));
+            }
+
+            for (field in cls.fields.get()) 
+              if (isImmutable(field)) 
+                ret = ret.concat(check(field.type))
+              else 
+                ret.push('${t.toString()} is not observable because the field "${field.name}" is mutable');
+
+            return ret;
+          })
+            .concat(checkMany(params)).map(function (s) 
+              return t.toString() + ' is not observable, because $s'
+            );
         case v:
           [t.toString() + ' is not observable'];
       }
-      
-      static function isImmutable(field:ClassField):Bool {
-        return
-          #if haxe4
-          field.isFinal || 
-          #end
-          switch field.kind {
-            case FVar(_, write): write == AccNever;
-            case FMethod(kind): kind != MethDynamic;
-          }
+
+  static function recurse(meta:MetaAccess, f:Void->Array<String>) {
+    meta.add(SKIP_CHECK, [], (macro null).pos);
+    var ret = f();
+    if (ret.length > 0)
+      meta.remove(SKIP_CHECK);
+    return ret;
+  }
+
+  static function isImmutable(field:ClassField):Bool {
+    return
+      #if haxe4
+      field.isFinal || 
+      #end
+      switch field.kind {
+        case FVar(_, write): write == AccNever;
+        case FMethod(kind): kind != MethDynamic;
       }
+  }
   #end
 }
