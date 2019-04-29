@@ -503,8 +503,9 @@ class ModelBuilder {
 
             var name = null;
             e = e.transform(function (e) return switch e.expr {
-              case EConst(CIdent("$last")): 
-                name = MacroApi.tempName(); 
+              case EConst(CIdent("$last")):
+                if (name == null) 
+                  name = MacroApi.tempName(); 
                 macro @:pos(e.pos) $i{name};
               default: e;
             });
