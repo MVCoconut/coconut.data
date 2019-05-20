@@ -257,7 +257,8 @@ class ModelBuilder {
         if(!sync) __coco_transitionCount.set(__coco_transitionCount.value + 1);
         return ret;
       }
-      @:signal var updatePerformed:$patchType;
+      var _updatePerformed:tink.core.Signal.SignalTrigger<$patchType> = tink.core.Signal.trigger();
+      public var updatePerformed:tink.core.Signal<$patchType> = _updatePerformed;
       public var observables(default, never):$observables;
       public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
       @:noCompletion var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
