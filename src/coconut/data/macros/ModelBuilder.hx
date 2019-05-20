@@ -150,7 +150,7 @@ class ModelBuilder {
 
           var args = [for (a in ctor.args) macro $i{a.name}];
 
-          init = macro var init = __coco__computeInitialValues($a{args});
+          init = macro var __coco_init = __coco__computeInitialValues($a{args});
           f.args = ctor.args;
         }
     }
@@ -158,7 +158,7 @@ class ModelBuilder {
     if (init == null)
       if (argFields.length > 0)
         f.args.push({
-          name: 'init',
+          name: '__coco_init',
           type: argType,
           opt: argsOptional
         });  
@@ -169,7 +169,7 @@ class ModelBuilder {
       constr.addStatement(init);
     else
       if (argsOptional && argFields.length > 0)
-        constr.addStatement(macro if (init == null) init = {});
+        constr.addStatement(macro if (__coco_init == null) __coco_init = {});
 
     constr.publish();
 
@@ -420,11 +420,11 @@ class ModelBuilder {
 
       return 
         if (optional) 
-          macro @:pos(f.pos) switch init.$name {
+          macro @:pos(f.pos) switch __coco_init.$name {
             case null: ($dFault : $type);
             case v: v;
           }
-        else macro @:pos(f.pos) init.$name;
+        else macro @:pos(f.pos) __coco_init.$name;
     }
 
     var state = stateOf(f.name);
