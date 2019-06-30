@@ -478,7 +478,7 @@ class ModelBuilder {
       });
     }
 
-    if (kind == KObservable)
+    if (kind == KObservable || kind == KEditable)
       patchFields.push(mk(valueType, true));
 
     init.push(

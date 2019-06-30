@@ -15,6 +15,7 @@ class RunTests {
   static function main() {
     run(TestBatch.make([
       new issues.Issue37(),
+      new issues.Issue42(),
       new TransitionTest(),
       new ExternalTest(),
       new TodoModelTest(),
@@ -58,6 +59,7 @@ class LastTest {
     return asserts.done();
   }
 }
+
 
 @:asserts
 class CustomConstructorTest {
@@ -424,6 +426,7 @@ class TransitionModel implements Model {
 
 class WithCustomConstructor implements Model {
   @:observable var sum:Int;
+
   function new(a:Int, b:Int) {
     // log('sum ${this.sum}');//shouldn't compile
     this = { sum: a + b };
