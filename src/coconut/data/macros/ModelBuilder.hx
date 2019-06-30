@@ -375,7 +375,7 @@ class ModelBuilder {
 
           switch option.getIdent().sure() {
             case 'guard': 
-              config.guard = make(t);
+              config.guard = macro @:pos(v.pos) function (param):$t return $v;
             case 'comparator': 
               config.comparator = make(macro : Bool);
             default: 

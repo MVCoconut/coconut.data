@@ -401,7 +401,7 @@ class Movement implements Model {
 }
 
 class Compass implements Model {
-  @:editable(guard = (next % 360 + 360) % 360) var degrees:Float = @byDefault .0;
+  @:editable(guard = (param % 360 + 360) % 360) var degrees:Float = @byDefault .0;
 }
 
 class Speedometer implements Model {
