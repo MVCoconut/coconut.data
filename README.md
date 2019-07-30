@@ -392,7 +392,7 @@ class User implements coconut.data.Model {
   @:editable var credentials:Option<Credentials>;
   @:loaded var profile:Option<UserProfile> = switch credentials {
     case None: None;
-    case Some(c): server.login(c);
+    case Some(c): server.login(c).next(profile -> Some(profile));
   }
 }
 ```
