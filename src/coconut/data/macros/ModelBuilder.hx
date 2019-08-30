@@ -257,7 +257,8 @@ class ModelBuilder {
         return ret;
       }
       var _updatePerformed:tink.core.Signal.SignalTrigger<$patchType> = tink.core.Signal.trigger();
-      public var updatePerformed:tink.core.Signal<$patchType> = _updatePerformed;
+      public var updatePerformed(get, never):tink.core.Signal<$patchType>;
+        function get_updatePerformed() return _updatePerformed;
       public var observables(default, never):$observables;
       public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
       @:noCompletion var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
