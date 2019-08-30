@@ -137,8 +137,8 @@ class ModelBuilder {
         else {
           c.addMember({
             name: "__coco__computeInitialValues",
-            pos: c.target.pos,
-            meta: [{ name: ':extern', params: [], pos: c.target.pos}],
+            pos: (macro null).pos,
+            meta: [{ name: ':extern', params: [], pos: (macro null).pos}],
             access: [AStatic, AInline],
             kind: FFun({
               args: ctor.args,
@@ -173,22 +173,21 @@ class ModelBuilder {
 
     constr.publish();
 
-
     if (!isInterface && !c.target.meta.has(':tink'))
-      c.target.meta.add(':tink', [], c.target.pos);
+      c.target.meta.add(':tink', [], (macro null).pos);
     
     {
       var transform = tink.SyntaxHub.exprLevel.appliedTo(c).force();
       for (f in this.init)
         constr.init(f.name, f.expr.pos, Value(transform(f.expr)), { bypass: true });
     }
-    constr.init('__coco_transitionCount', c.target.pos, Value(macro new tink.state.State(0)), {bypass: true});
-    constr.init('errorTrigger', c.target.pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
-    constr.init('transitionErrors', c.target.pos, Value(macro errorTrigger), {bypass: true});
+    constr.init('__coco_transitionCount', (macro null).pos, Value(macro new tink.state.State(0)), {bypass: true});
+    constr.init('errorTrigger', (macro null).pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
+    constr.init('transitionErrors', (macro null).pos, Value(macro errorTrigger), {bypass: true});
     
     {
       var observables = TAnonymous(observableFields);
-      constr.init('observables', c.target.pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
+      constr.init('observables', (macro null).pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)), { bypass: true });
     }
 
     for (s in afterInit)
@@ -218,7 +217,7 @@ class ModelBuilder {
 
     observableFields.push({
       name: 'isInTransition',
-      pos: c.target.pos,
+      pos: (macro null).pos,
       kind: FProp('default', 'never', macro : tink.state.Observable<Bool>),
     });
     observableInit.push({
