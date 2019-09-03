@@ -370,14 +370,11 @@ class ModelBuilder {
       switch e {
         case macro $option = $v:
 
-          function make(ret)
-            return macro @:pos(v.pos) function (next:$ret, prev:$ret):$ret return $v;
-
           switch option.getIdent().sure() {
             case 'guard': 
               config.guard = macro @:pos(v.pos) function (param):$t return $v;
             case 'comparator': 
-              config.comparator = make(macro : Bool);
+              config.comparator = macro @:pos(v.pos) function (next:$t, prev:$t):Bool return $v;
             default: 
               option.reject('only `guard` and `comparator` allowed here');
           }

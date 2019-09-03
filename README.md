@@ -239,8 +239,7 @@ Technically you can do things like `@:transition(return Date.now().getTime())` b
 Both `@:editable` and `@:observable` fields support comparators that determine whether two values are considered equal. The previous value is `prev` and the next value is `next`. Example:
 
 ```haxe
-@:comparator(Type.enumEq(prev, next))
-@:editable var color:Option<String>;
+@:editable(comparator = Type.enumEq(prev, next)) var color:Option<String>;
 ```
 
 This means that `model.color = Some('pink')` will not trigger if the value already was `Some('pink')`.
