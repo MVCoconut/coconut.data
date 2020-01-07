@@ -9,6 +9,6 @@
     "test": "lix run travix node"
   },
   "dependencies": {
-    "lix": "=15.3.0-alpha.1"
+    "lix": "^15.5.4"
   }
 }
