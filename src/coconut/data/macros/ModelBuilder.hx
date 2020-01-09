@@ -1,9 +1,6 @@
 package coconut.data.macros;
 
-#if !macro
-  #error
-#end
-
+#if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import coconut.data.macros.Models.*;
@@ -81,15 +78,6 @@ class ModelBuilder {
         }
 
     addBoilerPlate();
-
-    #if haxe4
-    for (f in c)
-      switch f.kind {
-        case FProp('default', 'never', _, _):
-          f.isFinal = true;
-        default:
-      }
-    #end
 
     if (!isInterface)
       buildConstructor(ctor);
@@ -179,7 +167,7 @@ class ModelBuilder {
     {
       var transform = tink.SyntaxHub.exprLevel.appliedTo(c).force();
       for (f in this.init)
-        constr.init(f.name, f.expr.pos, Value(transform(f.expr)), { bypass: true });
+        constr.init(f.name, f.expr.pos, Value(transform(f.expr)));
     }
     constr.init('__coco_transitionCount', (macro null).pos, Value(macro new tink.state.State(0)), {bypass: true});
     constr.init('errorTrigger', (macro null).pos, Value(macro tink.core.Signal.trigger()), {bypass: true});
@@ -596,3 +584,4 @@ class ModelBuilder {
     return builder.export();
   }
 }
+#end

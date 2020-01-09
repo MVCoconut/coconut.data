@@ -1,4 +1,4 @@
--D tink_state=0.10.1
-# @install: lix --silent download "gh://github.com/haxetink/tink_state#fd3f1730324a84be27a778384c48ba273bf76ba1" into tink_state/0.10.1/github/fd3f1730324a84be27a778384c48ba273bf76ba1
+-D tink_state=0.11.0
+# @install: lix --silent download "gh://github.com/haxetink/tink_state#501ab534288d6a7e1a95f40eb2cf75b9fc315713" into tink_state/0.11.0/github/501ab534288d6a7e1a95f40eb2cf75b9fc315713
 -lib tink_core
--cp ${HAXE_LIBCACHE}/tink_state/0.10.1/github/fd3f1730324a84be27a778384c48ba273bf76ba1/src
+-cp ${HAXE_LIBCACHE}/tink_state/0.11.0/github/501ab534288d6a7e1a95f40eb2cf75b9fc315713/src
