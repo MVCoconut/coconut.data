@@ -21,6 +21,7 @@ class RunTests {
       new CustomConstructorTest(),
       new LastTest(),
       new ValidationTest(),
+      new VariableTest(),
       new ObservabilityTest(),
     ])).handle(exit);
   }

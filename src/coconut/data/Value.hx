@@ -22,7 +22,16 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
     return if (this == null) fallback else this;
 
   #if macro
-  static public function fromExpr(e:Expr, expected:Type) {
+  static public function getParam(t:Type)
+    return switch t {
+      case null: typeof(macro @:pos(currentPos()) (cast null));
+      case TAbstract(_.get().module => 'coconut.data.Value', [expected]):
+        expected;
+      case t:
+        t;//not sure if doing it for all types is really the best choice
+    }
+
+  static public function ofExpr(e:Expr, expected:Type) {
     var expectedCt = expected.toComplex();
 
     return switch e {
@@ -61,14 +70,7 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
   }
   #end
   macro static public function fromHxx(e:Expr)
-    return fromExpr(e,
-      switch getExpectedType().reduce() {
-        case TAbstract(_.get().module => 'coconut.data.Value', [expected]):
-          expected;
-        case t:
-          t;//not sure if doing it for all types is really the best choice
-      }
-    );
+    return ofExpr(e, getParam(getExpectedType()));
 
   @:from macro static function lift(e) {
     //TODO: be a bit smarter about detecting constants and also make sure literal `null` is handled properly
