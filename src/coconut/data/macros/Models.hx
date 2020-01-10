@@ -75,11 +75,17 @@ class Models {
     return [for (p in params) for (s in check(p)) s];
 
   static var registered = false;
-  static var delayedChecks = new Map();
+  static var delayedFieldChecks = new Map<String, Map<String, Bool>>();
 
   static public function classId(cl:ClassType)
     return cl.module + '.' + cl.name;
 
+  static var deferredChecks = [];
+
+  static public function afterChecking(fn:Void->Void) {
+    deferredChecks.push(fn);
+    scheduleChecks();
+  }
   static public function checkLater(field:String, ?className:String) {
 
     var target = switch className {
@@ -87,13 +93,16 @@ class Models {
       case v: v;
     }
 
-    var checks = switch delayedChecks[target] {
-      case null: delayedChecks[target] = new Map();
+    var checks = switch delayedFieldChecks[target] {
+      case null: delayedFieldChecks[target] = new Map();
       case v: v;
     }
 
     checks[field] = true;
+    scheduleChecks();
+  }
 
+  static function scheduleChecks()
     if (!registered) {
       registered = true;
       Context.onGenerate(function (types) {
@@ -102,7 +111,7 @@ class Models {
           switch t {
 
             case TInst(_.get() => cl, _):
-              switch delayedChecks[classId(cl)] {
+              switch delayedFieldChecks[classId(cl)] {
                 case null:
                 case checks:
                   for (f in cl.fields.get())
@@ -114,9 +123,10 @@ class Models {
 
             default:
           }
+
+        for (c in deferredChecks) c();
       });
     }
-  }
 
   static public function check(t:Type):Array<String>
     return
