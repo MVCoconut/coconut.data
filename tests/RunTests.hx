@@ -16,6 +16,7 @@ class RunTests {
     run(TestBatch.make([
       new issues.Issue37(),
       new issues.Issue42(),
+      new issues.Issue51(),
       new TransitionTest(),
       new ExternalTest(),
       new TodoModelTest(),
@@ -28,9 +29,9 @@ class RunTests {
     var a:InitialArgs<TransitionModel> = {};
     a = { value: 12 };
     a = {};
-    
+
   }
-  
+
 }
 
 @:asserts
@@ -55,7 +56,7 @@ class LastTest {
     w.foo = 'bop';
     asserts.assert(w.bar == 'foobarwobbleboinkbop');
     asserts.assert(w.async.match(Done('BOINK')));
-    
+
     return asserts.done();
   }
 }
@@ -64,7 +65,7 @@ class LastTest {
 @:asserts
 class CustomConstructorTest {
   public function new() {}
-  
+
   public function normal() {
     asserts.assert(WithPostConstruct.constructed == 0);
     new WithPostConstruct();
@@ -79,10 +80,10 @@ class CustomConstructorTest {
 @:asserts
 class TransitionTest {
   public function new() {}
-  
+
   public function normal() {
     var model = new TransitionModel();
-    
+
     asserts.assert(!model.isInTransition);
     var transition = model.modify(1);
     asserts.assert(model.isInTransition);
@@ -91,10 +92,10 @@ class TransitionTest {
       asserts.assert(!model.isInTransition);
       asserts.done();
     });
-    
+
     return asserts;
   }
-  
+
   public function error() {
     var model = new TransitionModel();
     var errorEmitted = false;
@@ -115,17 +116,17 @@ class ExternalTest {
     function mphToMps(mph:Float)
       return mph * ONE_MILE_IN_METERS / 3600;
 
-    var movement:Movement = new Movement({ 
+    var movement:Movement = new Movement({
       heading: compass.degrees / 180 * Math.PI,
       speed: mphToMps(speedometer.mph),
     });
-    
+
     test.assert(movement.heading == 0);
     compass.degrees = 90;
     test.assert(movement.heading == Math.PI / 2);
     compass.degrees += 360;
     test.assert(movement.heading == Math.PI / 2);
-    
+
     test.assert(movement.speed == 0);
     speedometer.mph = 100 / mphToMps(1);
     test.assert(movement.speed == 100);
@@ -151,9 +152,9 @@ class ExternalTest {
 }
 
 class SelectionTest {
-  
+
   static var options = [for (i in 0...10) new Named(Std.string(i), i)];
-  
+
   public function new() {}
 
   @:describe("single selection")
@@ -162,7 +163,7 @@ class SelectionTest {
     var s = Selection.single(options);
 
     test.assert(s.selected == None);
-    
+
     for (v in options) {
       test.assert(s.toggle(v.value));
       test.assert(Type.enumEq(Some(v.value), s.selected));
@@ -179,7 +180,7 @@ class SelectionTest {
     var s = Selection.single(options, { canUnselect: true });
 
     test.assert(s.selected == None);
-    
+
     for (v in options) {
       test.assert(s.toggle(v.value));
       test.assert(Type.enumEq(Some(v.value), s.selected));
@@ -189,7 +190,7 @@ class SelectionTest {
     }
 
     return test.done();
-  }  
+  }
 
   #if((haxe_ver < 4) && php) @:exclude #end // php was buggy in haxe3
   @:describe("  non-optional")
@@ -223,7 +224,7 @@ class TodoModelTest {
   public function new() {}
 
   #if ((haxe_ver < 4) && interp) @:exclude #end // FIXME: stack overflow for the old interpreter
-  @:describe("@:transition") 
+  @:describe("@:transition")
   public function testTransitions(test:AssertionBuffer) {
     var rates = new Rates();
     var p:Patch<Rates> = {};
@@ -241,7 +242,7 @@ class TodoModelTest {
 
     test.assert(rates.taxRate == 50);
     test.assert(rates.luxuryRate == 0);
-    
+
     checksum();
 
     for (i in 0...20) {
@@ -254,7 +255,7 @@ class TodoModelTest {
 
     rates.setTaxRate(40).handle(function (o) sum += o.sure());
     rates.setLuxuryRate(30).handle(function (o) sum += o.sure());
-    
+
     test.assert(sum == 70);
 
     checksum();
@@ -264,7 +265,7 @@ class TodoModelTest {
 
   @:describe("@:loaded")
   public function testLoaded(test:AssertionBuffer) {
-    
+
     var called = false,
         empty:Iterable<TodoItem> = [];
     function loadSimilarTodos(description:String):Promise<Iterable<TodoItem>> {
@@ -278,7 +279,7 @@ class TodoModelTest {
 
     var item = new TodoItem({ description: 'test', server: {loadSimilarTodos:loadSimilarTodos} }),
         expected = [Loading, Done(empty)];
-        
+
     Future.async(function (cb) {
       if (called) {
         cb(Failure(new Error('@:loaded is not lazy')));
@@ -325,7 +326,7 @@ class TodoItem implements Model {
 
   @:constant var server:{ function loadSimilarTodos(description:String):Promise<Iterable<TodoItem>>; };
   @:constant var created:Date = @byDefault Date.now();
-  
+
   @:constant var whatever:Option<Observable<List<TodoItem>>> = None;
   @:constant var whatever2:Observable<String> = Observable.const('');
   @:skipCheck @:constant var whatever3:Array<String> = [];
@@ -334,12 +335,12 @@ class TodoItem implements Model {
 
   @:constant var array:ObservableArray<Int> = null;
   @:constant var map:ObservableMap<String, Int> = null;
-  
+
   @:editable var completed:Bool = false;
   @:editable var description:String;
 
   @:computed var firstLine:String = description.split('\n')[0];
-  
+
   @:loaded var similar:Iterable<TodoItem> = server.loadSimilarTodos(this.description);
 }
 
@@ -349,32 +350,32 @@ class Server {
 }
 
 class Rates implements Model {
-  
+
   @:observable var taxRate:Int = 0;
   @:observable var luxuryRate:Int = 0;
   @:computed var scienceRate:Int = 100 - taxRate - luxuryRate;
 
-  @:transition(return taxRate) 
+  @:transition(return taxRate)
   function setTaxRate(to:Int) {
-    
+
     if (to < 0) to = 0;
     else if (to > 100) to = 100;
 
-    return 
+    return
       if (to < taxRate || to - taxRate < scienceRate) Future.sync(Noise).map(function (_) return @patch { taxRate: to });
       else { taxRate: to, luxuryRate: 100 - to };
   }
 
-  @:transition(return luxuryRate) 
+  @:transition(return luxuryRate)
   function setLuxuryRate(to:Int) {
-    
+
     if (to < 0) to = 0;
     else if (to > 100) to = 100;
 
-    return 
+    return
       if (to < luxuryRate || to - luxuryRate < scienceRate) { luxuryRate: to };
       else { luxuryRate: to, taxRate: 100 - to };
-  }  
+  }
 }
 
 class Ticker {
@@ -387,10 +388,10 @@ class Ticker {
 }
 
 class Movement implements Model {
-  
+
   @:external var heading:Float;
   @:external var speed:Float;
-  
+
   @:computed var horizontalSpeed:Float = Math.cos(heading) * speed;
   @:computed var verticalSpeed:Float = Math.sin(heading) * speed;
 
@@ -418,7 +419,7 @@ class TransitionModel implements Model {
     _boink.trigger('blub');
     return Future.async(function(cb) haxe.Timer.delay(cb.bind({value: v}), 10));
   }
-  
+
   @:transition
   function failure()
     return new Error('Dummy');

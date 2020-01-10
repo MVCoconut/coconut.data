@@ -9,40 +9,40 @@ using tink.MacroApi;
 #end
 
 class Models {
-  #if macro 
+  #if macro
 
-  static public function build() 
+  static public function build()
     return ModelBuilder.build();
 
   static function getInitialArgs()
-    return 
+    return
       switch Context.getLocalType() {
         case TInst(_, [TInst(_.get() => cl, params)]):
-          
+
           switch cl.constructor.get().type.applyTypeParameters(cl.params, params) {
             case TFun([arg], _): arg.t;
             default: throw 'assert';
           }
 
         default: throw 'assert';
-      }    
+      }
 
 
   static function getObservables()
-    return 
+    return
       switch Context.getLocalType() {
         case TInst(_, [_.toComplex() => ct]):
 
           (macro (null : $ct).observables).typeof().sure();
 
         default: throw 'assert';
-      }    
+      }
 
-  static function getPatch() 
-    return 
+  static function getPatch()
+    return
       switch Context.getLocalType() {
         case TInst(_.get() => cl, [_.toComplex() => ct]):
-          
+
           if (cl.isInterface)
             Context.currentPos().error('Cannot use Patch<T> on interfaces');
 
@@ -55,13 +55,13 @@ class Models {
         default: throw 'assert';
       }
 
-  static function considerValid(pack:Array<String>, name:String) 
+  static function considerValid(pack:Array<String>, name:String)
     return
       switch pack.concat([name]).join('.') {
         case  'Date' | 'Int' | 'String' | 'Bool' | 'Float' | 'Null': true;
         case 'tink.pure.List': true;
         case 'tink.Url': true;
-        default: 
+        default:
           switch [pack, name] {
             case [['tink', 'core'], 'NamedWith' | 'Pair' | 'Lazy' | 'TypedError' | 'Future' | 'Promise' | 'Signal' | 'SignalTrigger']: true;
             default: false;
@@ -70,8 +70,8 @@ class Models {
 
   static public inline var OBSERVABLE = ':observable';
   static public inline var SKIP_CHECK = ':skipCheck';
-  
-  static function checkMany(params:Array<Type>) 
+
+  static function checkMany(params:Array<Type>)
     return [for (p in params) for (s in check(p)) s];
 
   static var registered = false;
@@ -79,7 +79,7 @@ class Models {
 
   static public function classId(cl:ClassType)
     return cl.module + '.' + cl.name;
-  
+
   static public function checkLater(field:String, ?className:String) {
 
     var target = switch className {
@@ -107,7 +107,7 @@ class Models {
                 case checks:
                   for (f in cl.fields.get())
                     if (checks[f.name]) switch check(f.type) {
-                      case []: 
+                      case []:
                       case v: f.pos.error(v[0]);
                     }
               }
@@ -119,7 +119,7 @@ class Models {
   }
 
   static public function check(t:Type):Array<String>
-    return 
+    return
       switch t {
         case TAnonymous(_.get().fields => fields):
           var ret = [];
@@ -130,17 +130,17 @@ class Models {
                   ret.push(s);
               default:
                 ret.push('Field `${f.name}` of `${t.toString()}` needs to have write access `never`');
-            }   
+            }
 
-          ret;  
-        case TFun(_, _): [];   
+          ret;
+        case TFun(_, _): [];
         case TAbstract(_.get().meta.has(':enum') => true, _): [];
         case TInst(_.get().kind => KTypeParameter(_), _): [];
         case TInst(_.get() => { pack: ['tink', 'state'], name: 'ObservableArray' | 'ObservableMap' }, params): checkMany(params);
-        case TInst(_, params) | TAbstract(_, params) 
+        case TInst(_, params) | TAbstract(_, params)
           if (
-            Context.unify(t, Context.getType('tink.state.Observable.ObservableObject')) 
-              || 
+            Context.unify(t, Context.getType('tink.state.Observable.ObservableObject'))
+              ||
             Context.unify(t, Context.getType('coconut.data.Model'))
           ):
             checkMany(params);
@@ -155,11 +155,11 @@ class Models {
           e.meta.add(SKIP_CHECK, [], e.pos);
 
           var ret = [];
-          for (c in e.constructs) 
+          for (c in e.constructs)
             switch c.type.reduce() {
               case TFun(args, _):
                 for (a in args)
-                  for (s in check(a.t)) 
+                  for (s in check(a.t))
                     ret.push('Enum ${e.name} is not observable because $s for argument ${c.name}.${a.name}');
               default:
             }
@@ -169,46 +169,53 @@ class Models {
 
           ret.concat(checkMany(params));
 
-        case TAbstract(_.get() => { pack: pack, name: name }, params) 
-           | TInst(_.get() => { pack: pack, name: name }, params) 
+        case TAbstract(_.get() => { pack: pack, name: name }, params)
+           | TInst(_.get() => { pack: pack, name: name }, params)
              if (considerValid(pack, name)):
           checkMany(params);
         case TDynamic(null): [];//personally, I'm inclined to disallow this
-        case TLazy(_): 
+        case TLazy(_):
           check(t.reduce(true));
         case TType(_.get() => { pos: pos, meta: meta, name: name }, params), TAbstract(_.get() => { pos: pos, meta: meta, name: name }, params):
           recurse(
-            meta, 
-            check.bind(Context.followWithAbstracts(t, true)) //On @:coreType, following returns the type itself, which will then pass via the above @:skipCheck branch
+            meta,
+            check.bind(followOnce(t)) //On @:coreType, following returns the type itself, which will then pass via the above @:skipCheck branch
           )
-            .concat(checkMany(params)).map(function (s) 
+            .concat(checkMany(params)).map(function (s)
               return t.toString() + ' is not observable, because $s'
             );
         case TInst(_.get() => {kind: KExpr(_)}, _): // const type param
           [];
         case t = TInst(_.get() => cls, params):
-          
+
           recurse(cls.meta, function () {
-            
+
             var ret = switch cls.superClass {
               case null: [];
               case c: check(TInst(cls.superClass.t, cls.superClass.params));
             }
 
-            for (field in cls.fields.get()) 
-              if (isImmutable(field)) 
+            for (field in cls.fields.get())
+              if (isImmutable(field))
                 ret = ret.concat(check(field.type))
-              else 
+              else
                 ret.push('${t.toString()} is not observable because the field "${field.name}" is mutable');
 
             return ret;
           })
-            .concat(checkMany(params)).map(function (s) 
+            .concat(checkMany(params)).map(function (s)
               return t.toString() + ' is not observable, because $s'
             );
         case v:
           [t.toString() + ' is not observable'];
       }
+
+  static function followOnce(t:Type) //TODO: perhaps move this to tink_macro
+    return switch t {
+      case TAbstract(_.get() => a, params):
+        a.type.applyTypeParameters(a.params, params);
+      default: Context.follow(t, true);
+    }
 
   static function recurse(meta:MetaAccess, f:Void->Array<String>) {
     meta.add(SKIP_CHECK, [], (macro null).pos);
@@ -221,7 +228,7 @@ class Models {
   static function isImmutable(field:ClassField):Bool {
     return
       #if haxe4
-      field.isFinal || 
+      field.isFinal ||
       #end
       switch field.kind {
         case FVar(_, write): write == AccNever;
