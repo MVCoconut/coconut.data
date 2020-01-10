@@ -12,7 +12,7 @@ class Setup {
         )
       });
       tink.hxx.Helpers.setCustomTransformer('coconut.data.Variable', {
-        reduceType: function (t) return t,
+        reduceType: Variable.getParam,
         postprocessor: PTyped(function (t, e) return Variable.ofExpr(e))
       });
     #end

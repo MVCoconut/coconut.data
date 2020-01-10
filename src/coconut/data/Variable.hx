@@ -10,10 +10,23 @@ using tink.MacroApi;
 #end
 
 @:forward
-abstract Variable<T>(State<T>) from State<T> to State<T> {
+abstract Variable<T>(State<T>) from State<T> to State<T> to Observable<T> {
   static public macro function make(e)
     return ofExpr(e);
+
+  public inline function or(fallback:Variable<T>):State<T>
+    return if (this == null) fallback else this;
+
   #if macro
+  static public function getParam(t:Type)
+    return switch t {
+      case null: typeof(macro @:pos(currentPos()) (cast null));
+      case TAbstract(_.get().module => 'coconut.data.Variable', [expected]):
+        expected;
+      case t:
+        t;//not sure if doing it for all types is really the best choice
+    }
+
   static public function ofExpr(e:Expr)
     return (switch typeExpr(e) {
       case done = followWithAbstracts(_.t) => TInst(_.get() => { module: 'tink.state.State', name: 'StateObject' }, _):
