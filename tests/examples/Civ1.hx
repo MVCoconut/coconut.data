@@ -1,7 +1,8 @@
 package examples;
 
 @:asserts
-class Civ1 implements Model {
+class Civ1 {
+  public function new() {}
   #if ((haxe_ver < 4) && interp) @:exclude #end // FIXME: stack overflow for the old interpreter
   public function transitions() {
     var rates = new Rates();
