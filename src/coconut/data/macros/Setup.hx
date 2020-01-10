@@ -10,8 +10,8 @@ class Setup {
         case TAbstract(_, [t]): t;
         default: t;
       },
-      postprocessor: PTyped(function (t, e) {
-        return coconut.data.Value.fromExpr.bind(e, switch t {
+      postprocessor: PTyped(function (t:haxe.macro.Type, e) {
+        return Value.fromExpr.bind(e, switch t {
           case TAbstract(_, [t]): t;
           default: throw 'assert';
         }).bounce();
