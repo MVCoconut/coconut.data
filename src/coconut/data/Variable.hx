@@ -33,7 +33,7 @@ abstract Variable<T>(State<T>) from State<T> to State<T> to Observable<T> {
         storeTypedExpr(done);
       case { t: t }:
         switch e {
-          case macro ${typeExpr(_) => v}.$name if (unify(v.t.reduce(), getType('coconut.data.Model'))):
+          case macro ${typeExpr(_) => v}.$name:
 
             var ret = storeTypedExpr(v);
 
