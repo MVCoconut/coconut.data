@@ -26,7 +26,7 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
     var expectedCt = expected.toComplex();
 
     return switch e {
-      case { expr: EConst(_) }:
+      case macro true, macro false, { expr: EConst(_.match(CIdent(_)) => false) }:
         macro @:pos(e.pos) tink.state.Observable.const(($e : $expectedCt));
       default:
 
