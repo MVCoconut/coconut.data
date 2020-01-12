@@ -38,9 +38,18 @@ abstract Variable<T>(State<T>) from State<T> to State<T> to Observable<T> {
     return (switch typeExpr(e) {
       case done = followWithAbstracts(_.t) => TInst(_.get() => { module: 'tink.state.State', name: 'StateObject' }, _):
         storeTypedExpr(done);
-      case { t: t }:
+      case te:
         switch e {
-          case macro ${typeExpr(_) => v}.$name: // TODO: consider checking if the target is valid
+          case macro $i{name}:
+            e = macro @:pos(e.pos) this.$name;
+          default:
+        }
+        switch e {
+          case macro ${owner}.$name: // TODO: consider checking if the target is valid
+
+            var v = typeExpr(owner);
+            if (hasThis(v))
+              v = typeExpr(macro @:pos(owner.pos) (function () return $owner)());
 
             var ret = storeTypedExpr(v);
 
@@ -68,8 +77,21 @@ abstract Variable<T>(State<T>) from State<T> to State<T> to Observable<T> {
             }
 
         default:
-          e.reject('expression should be a field or of type State (found ${t.toString()})');
+          e.reject('expression should be a field or of type State (found ${te.t.toString()})');
       }
     });
+
+    static function hasThis(e:TypedExpr) {
+      function seek(e:TypedExpr)
+        switch e.expr {
+          case TConst(TThis): throw FOUND;
+          default: e.iter(seek);
+        }
+
+      return
+        try { seek(e); false; }
+        catch (_:Dynamic) true;
+    }
+    static var FOUND = {};
   #end
 }
