@@ -8,6 +8,7 @@ class RunTests {
 
   static function main() {
     run(TestBatch.make([
+      new issues.Issue2(),
       new issues.Issue37(),
       new issues.Issue42(),
       new issues.Issue46(),

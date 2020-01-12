@@ -217,6 +217,8 @@ class ModelBuilder {
         case v: v;
       },
     }]);// workaround for https://github.com/HaxeFoundation/haxe/issues/6316 \o/
+
+    var self = c.target.name.asComplexType([for (p in c.target.params) TPType(p.name.asComplexType())]);
     var fields:Array<Member> = (macro class {
       @:noCompletion function __cocoupdate(ret:tink.core.Promise<$patchType>) {
         var sync = true;
@@ -242,6 +244,7 @@ class ModelBuilder {
         function get_updatePerformed() return _updatePerformed;
       public var observables(default, never):$observables;
       public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
+      public var annex(default, never):coconut.data.helpers.Annex<$self> = new coconut.data.helpers.Annex<$self>(this);
       @:noCompletion var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
       @:noCompletion var __coco_transitionCount(default, never):tink.state.State<Int>;
       public var isInTransition(get, never):Bool;

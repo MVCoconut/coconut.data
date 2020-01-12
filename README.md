@@ -39,7 +39,7 @@ Properties that are `@:constant`, `@:observable` or `@:editable` are physically 
 
 ```haxe
 class TodoItem implements Model {
-  
+
   @:constant var created:Date = @byDefault Date.now();
   @:editable var completed:Bool = false;
   @:editable var description:String;
@@ -73,7 +73,7 @@ class TodoItem implements Model {
 }
 ```
 
-All fields become public by default (you can use `private` to keep them private of course) and all except the `@:editable` ones are readonly. 
+All fields become public by default (you can use `private` to keep them private of course) and all except the `@:editable` ones are readonly.
 
 ## `@:loaded` properties
 
@@ -97,7 +97,7 @@ Because the computation is asynchronous its current state can assume any of the 
 
 To properly modularize your application you will want to avoid having your models depend on services directly as it is in the above example. Instead, try to follow an approach where you provide services from outside, like so:
 
-```haxe 
+```haxe
 class TodoItem implements Model {
   // ... rest as above
 
@@ -138,34 +138,34 @@ Consider this example that might model the different tax / luxury / science rate
 
 ```haxe
 class Rates implements coconut.data.Model {
-  
+
   @:observable var taxRate:Int = 0;
   @:observable var luxuryRate:Int = 0;
   @:computed var scienceRate:Int = 100 - taxRate - luxuryRate;
 
   @:transition function setTaxRate(to:Int) {
-    
+
     if (to < 0) to = 0;
     else if (to > 100) to = 100;
 
-    return 
+    return
       if (to + luxuryRate < 100) { taxRate: to };
       else { taxRate: to, luxuryRate: 100 - to };
   }
 
   @:transition function setLuxuryRate(to:Int) {
-    
+
     if (to < 0) to = 0;
     else if (to > 100) to = 100;
 
-    return 
+    return
       if (to + taxRate < 100) { luxuryRate: to };
       else { luxuryRate: to, taxRate: 100 - to };
-  }  
+  }
 }
 ```
 
-You may notice that in this case we are returning the state changes synchronously. This works, because promises have an implicit cast from direct values. 
+You may notice that in this case we are returning the state changes synchronously. This works, because promises have an implicit cast from direct values.
 
 ### When Type Inference Fails
 
@@ -175,12 +175,12 @@ Assume we had defined `setTaxRate` like so:
 
 ```haxe
 @:transition function setTaxRate(to:Int) {
-  
+
   if (to < 0) to = 0;
   else if (to > 100) to = 100;
 
-  return 
-    if (to < taxRate || to - taxRate < scienceRate) 
+  return
+    if (to < taxRate || to - taxRate < scienceRate)
       Future.sync(Noise).map(function (_) return { taxRate: to });
     else { taxRate: to, luxuryRate: 100 - to };
 }
@@ -190,12 +190,12 @@ Let's set aside the fact that this is pretty non-sensical of course. The most im
 
 ```haxe
 @:transition function setTaxRate(to:Int) {
-  
+
   if (to < 0) to = 0;
   else if (to > 100) to = 100;
 
-  return 
-    if (to < taxRate || to - taxRate < scienceRate) 
+  return
+    if (to < taxRate || to - taxRate < scienceRate)
       Future.sync(Noise).map(function (_) return @patch { taxRate: to });
     else { taxRate: to, luxuryRate: 100 - to };
 }
@@ -215,14 +215,14 @@ You can use that if you're in need for an explicit type.
 By default a transition will simply return `Promise<Noise>`. You may however put a return statement into its metadata to return a value computed based on the final state after the transition.
 
 ```haxe
-@:transition(return taxRate) 
+@:transition(return taxRate)
 function setTaxRate(to:Int) {
-  
+
   if (to < 0) to = 0;
   else if (to > 100) to = 100;
 
-  return 
-    if (to < taxRate || to - taxRate < scienceRate) 
+  return
+    if (to < taxRate || to - taxRate < scienceRate)
       Future.sync(Noise).map(function (_) return @patch { taxRate: to });
     else { taxRate: to, luxuryRate: 100 - to };
 }
@@ -249,7 +249,7 @@ This means that `model.color = Some('pink')` will not trigger if the value alrea
 It is possible to have custom constructors of two kinds:
 
 1. **without arguments**: in this case the constructor still is generated, and the constructor body supplied by you is executed after the model is initialized. Think of it as a post-construct hook.
-2. **with arguments**: 
+2. **with arguments**:
 
   The structure of such a constructor is as follows:
 
@@ -260,16 +260,61 @@ It is possible to have custom constructors of two kinds:
   @:constant var bop:String = @byDefault "bop";
   function new(arg1:T1, arg2:T2) {
     //any code here is executed prior to initialization and access to `this` results in a compiler error
-    
+
     this = {//exactly one assignment to `this` is expected in the constructor body and it must contain a value for every property that doesn't have an initial or default value
       foo: 42,
       bar: 'barbar'
     };
-    
+
     //any code here may now access `this` as the model is now initialized
   }
   ```
 
+## Adding functionality to models on the fly via annex
+
+Every model has a property called `annex` with a method called `get` that is to be called with a model class that must have a constructor which will accept the model as its parameter. Example:
+
+```haxe
+class Todo implements Model {
+  @:editable var done:Bool;
+  @:editable var description:String;
+}
+
+class TodoList implements Model {
+  @:observable var items:List<Todo> = @byDefault null;
+  @:transition function add(description)
+    return { items: items.append(new Todo({ done: false, description: description })) };
+}
+
+class TodoSelection implements Model {
+  @:editable var filter:Todo->Bool = function (_) return true;
+  @:constant private var todos:TodoList;
+  @:computed var items:List<Todo> = todos.items.filter(function (item) return filter(item));
+  @:computed var total:Int = todos.items.length;
+  @:computed var selected:Int = items.length;
+  public function new(todos:TodoList)
+    this = { todos: todos };
+}
+```
+
+If you have a `var todoList = new TodoList()`, then calling `todoList.annex.get(TodoSelection)` will return the same `TodoSelection` every time (it is created when requested the first time and then retained).
+
+This only makes sense, if you want the same associated state for the same model everywhere. You may well wish to have two separate selections for two todolist.
+
+### Static extensions with annex
+
+It is sometimes useful to combine static extensions with annex, e.g.:
+
+```haxe
+class TodoListTools {
+  static public function select(todoList:TodoList, filter)
+    todoList.get(TodoSelection).filter = filter;
+  static public function selectedItems(todoList:TodoList)
+    return todoList.get(TodoSelection).items;
+}
+```
+
+And when `using TodoListTools`, you can do `todoList.select(i -> i.done)` and retrieve `todoList.selectedItems()`.
 
 # To cycle or not to cycle
 
@@ -403,7 +448,7 @@ class User implements coconut.data.Model {
   @:constant var store:{ function buy(item:Item):Promise<{ total:Int }> };
   @:observable var balance:Int = 100;
   @:transition function buy(item:Item)
-    return 
+    return
       if (item.price < balance) store.buy(item).next(function (o) return { balance: balance - o.total });
       else {};
 }
@@ -438,10 +483,10 @@ Imagine this:
 
 ```haxe
 class Movement implements Model {
-  
+
   @:external var heading:Float;
   @:external var speed:Float;
-  
+
   @:computed var horizontalSpeed:Float = Math.cos(heading) * speed;
   @:computed var verticalSpeed:Float = Math.sin(heading) * speed;
 
@@ -467,7 +512,7 @@ And let's compose these:
 ```haxe
 var compass:Compass = ...;
 var log:ChipLog = ...;
-var movement = new Movement({ 
+var movement = new Movement({
   heading: compass.degrees / 180 * Math.PI,
   speed: log.knots * KNOTS_IN_METERS_PER_SECOND,
 });
