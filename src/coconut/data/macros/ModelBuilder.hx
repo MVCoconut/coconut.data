@@ -249,6 +249,9 @@ class ModelBuilder {
       @:noCompletion var __coco_transitionCount(default, never):tink.state.State<Int>;
       public var isInTransition(get, never):Bool;
       @:noCompletion inline function get_isInTransition() return __coco_transitionCount.value > 0;
+      public function toString():String {
+        return $v{c.target.name};//TODO: consider adding fields
+      }
     }).fields;
 
     for (f in fields)

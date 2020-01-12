@@ -4,7 +4,7 @@ package issues;
 class Issue2 {
   public function new() {}
 
-  @:include public function test() {
+  public function test() {
     var todos = new TodoList();
     var selection = todos.annex.get(TodoSelection);
     asserts.assert(selection != null);

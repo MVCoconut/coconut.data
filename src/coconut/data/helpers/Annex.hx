@@ -8,7 +8,7 @@ using haxe.macro.Tools;
 using tink.MacroApi;
 #end
 
-class Annex<Target> {
+class Annex<Target:Model> {
 
   var target:Target;
   var registry:Map<Dynamic, Dynamic>;
@@ -18,7 +18,7 @@ class Annex<Target> {
     this.registry = cast new haxe.ds.ObjectMap();
   }
 
-  @:noCompletion public inline function __doGet<A>(cls:Class<A>, fn:Target->A):A
+  @:noCompletion public function __doGet<A>(cls:Class<A>, fn:Target->A):A
     return switch registry[cls] {
       case null: registry[cls] = fn(target);
       case v: v;
@@ -32,14 +32,16 @@ class Annex<Target> {
       }
 
     var ret = null;
-    var cPath = (function getPath(e:Expr) return switch e {
+    function getPath(e:Expr) return switch e {
       case macro $i{name}: name;
       case macro ${getPath(_) => p}.$name: '$p.$name';
       case { expr: EDisplay(_) | EDisplayNew(_) }:
         ret = e;
         '';
       default: e.reject('should be a dot-path');
-    })(cls);
+    }
+
+    var cPath = getPath(cls);
 
     if (ret != null)
       return ret;

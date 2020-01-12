@@ -1,14 +1,14 @@
 @:asserts
 class ObservabilityTest {
 	public function new() {}
-	
+
 	public function inst() {
 		new Container();
 		return asserts.done();
 	}
 }
 
-class Container implements coconut.data.Model {
+class Container implements Model {
 	#if haxe4
 	@:constant var f:Final = null;
 	#end
@@ -16,7 +16,7 @@ class Container implements coconut.data.Model {
 	@:constant var m:Function = null;
 }
 
-private class Object implements coconut.data.Model {}
+private class Object implements Model {}
 
 #if haxe4
 private class Final {

@@ -1,6 +1,12 @@
 package issues;
 
-class Issue46 implements Model {
+class Issue46 {
+  public function new() {
+
+  }
+}
+
+class Issue46Model implements Model {
   @:loaded var somethingAmazing:Int = {
     if (incredibleProperty == 0) calculatePlanToConquerWorld($last.or(0));
     else if (incredibleProperty == 1) haveBreakfastBeforeConqueringTheWorld($last.or(0));

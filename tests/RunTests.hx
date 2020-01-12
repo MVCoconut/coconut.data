@@ -29,7 +29,7 @@ class RunTests {
 
 }
 
-class Stuff implements coconut.data.Model {
+class Stuff implements Model {
   // issue #12:
     @:editable var foo:MyEnum = MyEnum.None;
     @:editable var bar:MyEnum2 = None;

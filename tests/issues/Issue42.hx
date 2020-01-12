@@ -12,7 +12,7 @@ class Issue42 {
   }
 }
 
-class Issue42Model implements coconut.data.Model {
+class Issue42Model implements Model {
   @:editable var foo:Int = 42;
   @:transition function setFoo(value)
     return { foo: value };

@@ -9,11 +9,11 @@ class Issue37 {
   }
 }
 
-class Minimal implements coconut.data.Model {
+class Minimal implements Model {
   @:constant var list:tink.pure.List<String>;
   @:constant var child:MinimalChild = new MinimalChild({list:list});
 }
 
-class MinimalChild implements coconut.data.Model {
+class MinimalChild implements Model {
   @:external var list:tink.pure.List<String>;
 }

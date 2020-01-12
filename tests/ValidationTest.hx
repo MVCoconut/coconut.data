@@ -3,14 +3,14 @@ package;
 @:asserts
 class ValidationTest {
   public function new() {}
-  
+
   public function test() {
     new ConstTypeParameter();
     return asserts.done();
   }
 }
 
-private class ConstTypeParameter implements coconut.data.Model {
+private class ConstTypeParameter implements Model {
 	@:constant var c:Const<255> = null;
 	@:constant var ac:AbstractConst = null;
 	@:constant var r:Recursive = null;
