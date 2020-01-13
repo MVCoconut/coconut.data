@@ -1,5 +1,6 @@
 package coconut.data.helpers;
 
+import coconut.data.macros.Models;
 #if macro
 import haxe.macro.Context.*;
 import haxe.macro.Type;
@@ -46,12 +47,23 @@ class Annex<Target:Model> {
     if (ret != null)
       return ret;
 
-    var cType = switch getType(cPath).reduce() {
+    var cType = try getType(cPath) catch (e:Dynamic) cls.pos.error(e);
+    var cType = switch cType {
       case TInst(_.get() => c, _):
         if (c.params.length > 0)
           cls.reject('cannot use this class, because it has type parameters');
         if (c.constructor == null)
           cls.reject('class has no constructor');
+        if (!c.meta.has(':coconut.check_scheduled')) {
+          c.meta.add(':coconut.check_scheduled', [], (macro null).pos);
+          var pos = cls.pos;
+          Models.afterChecking(function () {
+            switch Models.check(cType) {
+              case []:
+              case v: error(v[0], pos);
+            }
+          });
+        }
         c;
       default:
         cls.reject('not a class');
