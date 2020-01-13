@@ -244,19 +244,23 @@ class ModelBuilder {
         function get_updatePerformed() return _updatePerformed;
       public var observables(default, never):$observables;
       public var transitionErrors(default, never):tink.core.Signal<tink.core.Error>;
-      public var annex(default, never):coconut.data.helpers.Annex<$self> = new coconut.data.helpers.Annex<$self>(this);
       @:noCompletion var errorTrigger(default, never):tink.core.Signal.SignalTrigger<tink.core.Error>;
       @:noCompletion var __coco_transitionCount(default, never):tink.state.State<Int>;
       public var isInTransition(get, never):Bool;
       @:noCompletion inline function get_isInTransition() return __coco_transitionCount.value > 0;
-      public function toString():String {
-        return $v{c.target.name};//TODO: consider adding fields
-      }
     }).fields;
 
     for (f in fields)
       if (f.isPublic || !isInterface)
         c.addMember(f);
+
+    if (!isInterface)
+      c.addMembers(macro class {
+        public var annex(default, never):coconut.data.helpers.Annex<$self> = new coconut.data.helpers.Annex<$self>(this);
+        public function toString():String {
+          return $v{c.target.name};//TODO: consider adding fields
+        }
+      });
   }
 
   static function stateOf(name:String)

@@ -15,22 +15,20 @@ class Issue2 {
 
 private typedef Todo = Record<{ done:Bool, description:String }>;
 
-private class TodoList implements Model {
+private class TodoList implements ITodoList {
   @:observable var items:List<Todo> = @byDefault null;
   @:transition function add(description)
     return { items: items.append(new Todo({ done: false, description: description })) };
 }
 
-private class TodoSelection {
-  public var todos:TodoList;
-  public function new(todos) {
-    this.todos = todos;
-  }
+private interface ITodoList extends Model {
+  var items:List<Todo>;
 }
-// private class TodoSelection implements Model {
-//   @:editable var filter:Todo->Bool = function (_) return true;
-//   @:constant private var todos:TodoList;
-//   @:computed var items:List<Todo> = todos.items.filter(function (item) return filter(item));
-//   @:computed var total:Int = todos.items.length;
-//   @:computed var selected:Int = items.length;
-// }
+
+private class TodoSelection implements Model {
+  @:editable var filter:Todo->Bool = function (_) return true;
+  @:constant private var todos:ITodoList;
+  @:computed var items:List<Todo> = todos.items.filter(function (item) return filter(item));
+  @:computed var total:Int = todos.items.length;
+  @:computed var selected:Int = items.length;
+}
