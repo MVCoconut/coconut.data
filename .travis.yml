@@ -22,7 +22,7 @@ env:
   - HAXE_VERSION=nightly
 
 install:
-  - npm i -g lix@15.5.4
+  - npm i -g lix@15.6.1
   - lix install haxe $HAXE_VERSION
   - lix download
 
