@@ -456,17 +456,23 @@ class ModelBuilder {
       });
     }
 
+    var owned = kind == KObservable || kind == KEditable;
+
     if (settable) {
       var setter = 'set_$name';
       c.addMembers(macro class {
         @:noCompletion function $setter(param:$valueType):$valueType {
+          ${
+            if (owned) macro _updatePerformed.trigger({ $name: param })
+            else macro {}
+          }
           $i{state}.set(param);
           return param;
         }
       });
     }
 
-    if (kind == KObservable || kind == KEditable)
+    if (owned)
       patchFields.push(mk(valueType, true));
 
     init.push(
