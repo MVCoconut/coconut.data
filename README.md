@@ -80,7 +80,7 @@ All fields become public by default (you can use `private` to keep them private 
 Notice how in the example above the `@:loaded` property we declared actually has it's type promoted to `Promised<T>` from `tink_state` which is defined like so:
 
 ```haxe
-enum Promise<T> {
+enum Promised<T> {
   Loading;
   Done(value:T);
   Failed(e:Error);
