@@ -32,7 +32,11 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
     }
 
   static public function ofExpr(e:Expr, expected:Type) {
-    var expectedCt = expected.toComplex();
+    var expectedCt = switch expected {
+      case TInst(_.get().kind => KTypeParameter(_), _):
+        e.pos.makeBlankType();
+      default: expected.toComplex();
+    }
 
     return switch e {
       case macro true, macro false, { expr: EConst(_.match(CIdent(_)) => false) }:
