@@ -14,6 +14,7 @@ class RunTests {
       new issues.Issue46(),
       new issues.Issue51(),
       new issues.Issue53(),
+      new issues.Issue57(),
       new examples.Civ1(),
       new examples.TodoModelTest(),
       new TransitionTest(),
