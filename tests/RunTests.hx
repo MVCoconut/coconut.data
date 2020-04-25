@@ -25,6 +25,7 @@ class RunTests {
       new ValidationTest(),
       new VariableTest(),
       new ObservabilityTest(),
+      new PatchTest(),
     ])).handle(exit);
   }
 

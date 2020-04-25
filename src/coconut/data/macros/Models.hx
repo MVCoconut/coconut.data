@@ -49,7 +49,8 @@ class Models {
           (macro {
             var p = null;
             @:privateAccess (null : $ct).__cocoupdate(p);
-            p;
+            function get<T>(p:tink.core.Promise<T>):T throw 'abstract';
+            get(p);
           }).typeof().sure();
 
         default: throw 'assert';
