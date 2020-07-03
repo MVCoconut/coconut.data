@@ -64,6 +64,7 @@ class Models {
         case 'tink.Url': true;
         default:
           switch [pack, name] {
+            case [['haxe', 'ds'], 'ReadOnlyMap' | 'ReadOnlyArray']: true;
             case [['tink', 'core'], 'NamedWith' | 'Pair' | 'Lazy' | 'TypedError' | 'Future' | 'Promise' | 'Signal' | 'SignalTrigger']: true;
             default: false;
           };
