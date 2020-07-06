@@ -596,6 +596,9 @@ class ModelBuilder {
     var builder = new ClassBuilder(fields);
 
     new ModelBuilder(builder, ctor);
+    #if hotswap
+      hotswap.Macro.lazify(builder);
+    #end
 
     return builder.export();
   }
