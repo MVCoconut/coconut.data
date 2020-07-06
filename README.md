@@ -299,7 +299,7 @@ class TodoSelection implements Model {
 
 If you have a `var todoList = new TodoList()`, then calling `todoList.annex.get(TodoSelection)` will return the same `TodoSelection` every time (it is created when requested the first time and then retained).
 
-This only makes sense, if you want the same associated state for the same model everywhere. You may well wish to have two separate selections for two todolist.
+This only makes sense, if you want the same associated state for the same model everywhere. 
 
 ### Static extensions with annex
 
