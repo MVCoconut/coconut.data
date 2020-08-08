@@ -32,12 +32,16 @@ class TransitionTest {
   }
 }
 
-class TransitionModel implements Model {
+@:tink class TransitionModel implements Model {
   @:observable var value:Int = @byDefault 0;
+  #if tink_lang
   @:signal var boink:String;
+  #end
   @:transition
   function modify(v:Int) {
+    #if tink_lang
     _boink.trigger('blub');
+    #end
     return Future.async(function(cb) haxe.Timer.delay(cb.bind({value: v}), 10));
   }
 

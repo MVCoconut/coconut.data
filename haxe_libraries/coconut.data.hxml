@@ -3,5 +3,4 @@
 -lib tink_anon
 -lib tink_state
 -lib tink_pure
--lib tink_lang
 extraParams.hxml

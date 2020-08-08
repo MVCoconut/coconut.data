@@ -18,7 +18,6 @@
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"dependencies": {
 		"tink_state": "",
-		"tink_lang": "",
 		"tink_pure": "",
 		"tink_anon": ""
 	}

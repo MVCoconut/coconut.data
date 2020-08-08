@@ -238,10 +238,7 @@ class Models {
 
   static function isImmutable(field:ClassField):Bool {
     return
-      #if haxe4
-      field.isFinal ||
-      #end
-      switch field.kind {
+      field.isFinal || switch field.kind {
         case FVar(_, write): write == AccNever;
         case FMethod(kind): kind != MethDynamic;
       }

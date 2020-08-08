@@ -11,7 +11,7 @@ This library is the meat of the coconut, so to speak. It allows you to model you
 
 A model in coconut is an object that `implements coconut.data.Model`.
 
-Models are quite restrictive about what kind of properties they allow. Currently, there are six kinds, each of which is designated by special metadata.
+Models are quite restrictive about what kind of properties they allow. Currently, there are seven kinds, each of which is designated by special metadata.
 
 - `@:constant` - is initialized upon construction and never changes
 - `@:observable` - may change over time with the model's *transtions* (more on those later)
@@ -20,20 +20,6 @@ Models are quite restrictive about what kind of properties they allow. Currently
 - `@:loaded` - not unlike a computed property, but the computation is asynchronous - the last value is accessible as `Option` via `$last`
 - `@:external` - the module consumes an `Observable` upon construction and exposes it as if it were its own
 - `@:shared` - the module consumes a `State` upon construction and exposes it as if it were its own
-- `@:signal` - this actually just uses [signal syntax from tink_lang](https://haxetink.github.io/tink_lang/#/declaration-sugar/notifiers?id=notifiers). In short:
-
-  ```haxe
-  class Example implements Model {
-    @:signal var foo:String;
-  }
-  // corresponds to:
-  class Example implements Model {
-    public var foo(get, never):tink.core.Signal<String>;
-    var _foo:SignalTrigger<String>;
-  }
-  ```
-
-  External code can subscribe via `example.foo.handle(function (event) { /* something ... */})`. Relying strongly on [signals](https://haxetink.github.io/tink_core/#/types/signal) in coconut is usually a code smell, but it's supported for reasons of practicality.
 
 Properties that are `@:constant`, `@:observable` or `@:editable` are physically existent on the model, while `@:computed` and `@:loaded` are derived values. Let's see how we might use them:
 
@@ -63,12 +49,12 @@ class TodoItem implements Model {
 
   public function new(initial:{ description:String, ?created:Date }):Void { /* magic happens here */}
 
-  public var observables(default, never):{
-    var created(default, never):tink.state.Observable<Date>;
-    var completed(default, never):tink.state.Observable<Bool>;
-    var description(default, never):tink.state.Observable<String>;
-    var firstLine(default, never):tink.state.Observable<String>;
-    var similar(default, never):tink.state.Observable<tink.state.Promised<tink.pure.List<TodoItem>>>;
+  public final observables:{
+    final created:tink.state.Observable<Date>;
+    final completed:tink.state.Observable<Bool>;
+    final description:tink.state.Observable<String>;
+    final firstLine:tink.state.Observable<String>;
+    final similar:tink.state.Observable<tink.state.Promised<tink.pure.List<TodoItem>>>;
   };
 }
 ```
@@ -299,7 +285,7 @@ class TodoSelection implements Model {
 
 If you have a `var todoList = new TodoList()`, then calling `todoList.annex.get(TodoSelection)` will return the same `TodoSelection` every time (it is created when requested the first time and then retained).
 
-This only makes sense, if you want the same associated state for the same model everywhere. 
+This only makes sense, if you want the same associated state for the same model everywhere.
 
 ### Static extensions with annex
 
@@ -411,8 +397,8 @@ One way to avoid getting caught up in a dense jungle of transitions is to elimin
 
 ```haxe
 typedef Credentials = {
-  var user(default, never):String;
-  var password(default, never):String;
+  final user:String;
+  final password:String;
 }
 
 typedef Server = {
