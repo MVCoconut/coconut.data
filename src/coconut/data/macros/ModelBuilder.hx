@@ -161,13 +161,16 @@ class ModelBuilder {
 
     constr.publish();
 
-    switch tink.SyntaxHub.exprLevel.appliedTo(c) {
-      case Some(transform):
-        for (f in this.init)
-          constr.init(f.name, f.expr.pos, Value(transform(f.expr)));
-      default:
-    }
+    {
+      var transform =
+        switch tink.SyntaxHub.exprLevel.appliedTo(c) {
+          case Some(f): f;
+          default: e -> e;
+        }
 
+      for (f in this.init)
+        constr.init(f.name, f.expr.pos, Value(transform(f.expr)));
+    }
     constr.init('__coco_transitionCount', (macro null).pos, Value(macro new tink.state.State(0)));
     constr.init('errorTrigger', (macro null).pos, Value(macro tink.core.Signal.trigger()));
     constr.init('transitionErrors', (macro null).pos, Value(macro errorTrigger));

@@ -29,7 +29,7 @@ class WithLast implements Model {
   @:editable var foo:String;
   @:constant var load:String->Promise<String>;
   @:computed var bar:String = $last.or('') + foo;
-  @:loaded var async:String = load(foo).map(o => switch [o, $last] {
+  @:loaded var async:String = load(foo).map(o -> switch [o, $last] {
     case [Success(v), _]: Success(v);
     case [_, Some(v)]: Success(v);
     default: o;
