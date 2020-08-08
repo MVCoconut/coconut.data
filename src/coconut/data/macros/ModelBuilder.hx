@@ -251,11 +251,14 @@ class ModelBuilder {
     if (!isInterface) {
       c.addMembers(macro class {
         public final annex:coconut.data.helpers.Annex<$self>;
-        public function toString():String {
-          return $v{c.target.name};//TODO: consider adding fields
-        }
       });
 
+      if (!c.hasMember('toString'))
+        c.addMembers(macro class {
+          public function toString():String {
+            return $v{c.target.name};//TODO: consider adding fields
+          }
+        });
     }
   }
 
