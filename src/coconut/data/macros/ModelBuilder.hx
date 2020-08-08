@@ -600,7 +600,7 @@ class ModelBuilder {
       hotswap.Macro.lazify(builder);
     #end
 
-    return builder.export();
+    return builder.export(builder.target.meta.has(':explain'));
   }
 }
 #end
