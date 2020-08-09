@@ -53,6 +53,7 @@ class Inner implements Model {
   static var counter = 0;
   @:constant var id : Int = counter++;
   @:loaded var beep : Noise = Outer.loadNoise();
+  @:constant var cb : CallbackLink = beep.next(o->o).handle( () -> trace("Handled") );
 
   public function new() {
     beep;
