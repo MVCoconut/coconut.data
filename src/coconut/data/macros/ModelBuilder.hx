@@ -169,7 +169,7 @@ class ModelBuilder {
         }
 
       for (f in this.init)
-        constr.init(f.name, f.expr.pos, Value(transform(f.expr)));
+        constr.init(f.name, f.expr.pos, Value(macro @:pos(f.expr.pos) coconut.data.macros.Helper.untracked(${transform(f.expr)})));
     }
     constr.init('__coco_transitionCount', (macro null).pos, Value(macro new tink.state.State(0)));
     constr.init('errorTrigger', (macro null).pos, Value(macro tink.core.Signal.trigger()));
