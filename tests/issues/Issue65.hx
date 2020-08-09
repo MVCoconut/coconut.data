@@ -5,7 +5,7 @@ using tink.state.Promised;
 @:asserts class Issue65 {
   public function new() {}
 
-  @:include public function test() {
+  public function test() {
 
     var outer = new Outer();
     asserts.assert(Outer.requests == 0);
