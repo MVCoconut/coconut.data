@@ -1,5 +1,7 @@
 package issues;
 
+using tink.state.Promised;
+
 @:asserts class Issue65 {
   public function new() {}
 
@@ -9,9 +11,18 @@ package issues;
     var inner = outer.inner;
 
     Observable.auto(() -> outer.inner.id).bind({ direct: true }, function () {});
-    for (i in 0...100)
-      Outer.advance();
+
+    asserts.assert(Outer.requests == 0);
+    asserts.assert(outer.inner.beep.match(Loading));
     asserts.assert(Outer.requests == 1);
+
+    Outer.advance();
+
+    asserts.assert(outer.inner.beep.match(Done(Noise)));
+
+    asserts.assert(Outer.requests == 1);
+    asserts.assert(!Outer.advance());
+
     asserts.assert(outer.inner == inner);
 
     return asserts.done();
@@ -42,7 +53,7 @@ class Inner implements Model {
   @:loaded var beep : Noise = Outer.loadNoise();
 
   public function new() {
-    beep;
+    beep.next(o -> o).handle(function () trace('loaded'));
   }
   public function toString()
     return 'Inner#$id';

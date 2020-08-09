@@ -180,8 +180,7 @@ class ModelBuilder {
       constr.init('observables', (macro null).pos, Value(macro (${EObjectDecl(observableInit).at()} : $observables)));
     }
 
-    for (s in afterInit)
-      constr.addStatement(s);
+    constr.addStatement(macro tink.state.Observable.auto(function () $b{afterInit}));
   }
 
   function addBoilerPlate() {
