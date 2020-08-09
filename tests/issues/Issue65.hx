@@ -53,7 +53,7 @@ class Inner implements Model {
   @:loaded var beep : Noise = Outer.loadNoise();
 
   public function new() {
-    beep.next(o -> o).handle(function () trace('loaded'));
+    beep.next(o -> o);
   }
   public function toString()
     return 'Inner#$id';
