@@ -181,7 +181,10 @@ class ModelBuilder {
     }
 
     if (afterInit.length > 0)
-      constr.addStatement(macro tink.state.Observable.untracked(function () $b{afterInit}));
+      constr.addStatement(macro tink.state.Observable.untracked(function () {
+        $b{afterInit};
+        return null;
+      }));
   }
 
   function addBoilerPlate() {
