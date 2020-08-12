@@ -2,4 +2,5 @@ tests.hxml
 -lib travix
 -lib coconut.data
 -js out.js
+-D no-deprecation-warnings
 --no-output

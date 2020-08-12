@@ -3,7 +3,7 @@ package coconut.data.helpers;
 class Annex<Target:Model> {
 
   var target:Target;
-  var registry:Map<Dynamic, Dynamic>;
+  var registry:Map<ClassKey, Dynamic>;
 
   public function new(target:Target) {
   	this.target = target;
@@ -17,4 +17,9 @@ class Annex<Target:Model> {
     }
 
   public macro function get(ethis:Expr, cls:Expr);
+}
+
+private abstract ClassKey({}) {
+  @:from static function fromClass<T>(c:Class<T>):ClassKey
+    return cast c;
 }
