@@ -12,7 +12,7 @@ using tink.MacroApi;
 using tink.CoreApi;
 #end
 
-@:forward
+@:forward @:transitive
 abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from ObservableObject<T> from tink.state.State<T> {
 
   @:to inline function getValue():T

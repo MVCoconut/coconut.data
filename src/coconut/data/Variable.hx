@@ -9,7 +9,7 @@ using haxe.macro.Tools;
 using tink.MacroApi;
 #end
 
-@:forward
+@:forward @:transitive
 abstract Variable<T>(State<T>) from State<T> to State<T> to Observable<T> {
   static public macro function make(e)
     return ofExpr(e);
