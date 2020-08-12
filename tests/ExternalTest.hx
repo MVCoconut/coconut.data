@@ -50,7 +50,7 @@ class RandomExternals implements Model {
   @:external var foo:String = @byDefault "foo";
   @:external var bar:Int = @byDefault {
     var s = new State(0);
-    tick.handle(function () s.set(s.value + 1));
+    tick.asSignal().handle(function () s.set(s.value + 1));
     s;
   }
   static public var tick = new SignalTrigger<Noise>();
