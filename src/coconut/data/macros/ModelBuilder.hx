@@ -163,7 +163,7 @@ class ModelBuilder {
 
     {
       var transform =
-        switch tink.SyntaxHub.exprLevel.appliedTo(c) {
+        switch #if tink_syntaxhub tink.SyntaxHub.exprLevel.appliedTo(c) #else None #end {
           case Some(f): f;
           default: e -> e;
         }
