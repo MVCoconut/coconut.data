@@ -49,8 +49,7 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
             default: t;
           }
 
-        var te = unwrap(typeExpr(macro @:pos(e.pos) ($e : $expectedCt)));
-
+        var te = unwrap(typeExpr(macro @:pos(e.pos) (function ():$expectedCt { return $e; })));
         //TODO: the following TypedExpr patterns seems very brittle ... better add thorough tests
 
         function undouble(te:TypedExpr)
@@ -60,11 +59,12 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
             default: None;
           }
 
-        switch te {
-          case undouble(_) => Some(e): storeTypedExpr(e);
+        switch te.expr {
+          case TFunction(undouble(_.expr) => Some(e)):
+            storeTypedExpr(e);
           //TODO: add case to optimize attribute and model access
           default:
-            macro @:pos(e.pos) tink.state.Observable.auto(function ():$expectedCt return $e);
+            macro @:pos(e.pos) tink.state.Observable.auto(${storeTypedExpr(te)});
         }
     }
   }
@@ -83,7 +83,7 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
           //TODO: a more aggressive optimization would be to look into the getter and if it merely accesses an observable, grab that ... would reduce the cost of spreading attributes into a child in coconut.ui
           var name = f.get().name;
           macro @:pos(e.pos) ${storeTypedExpr(owner)}.observables.$name;
-        case { t: type }:
+        case te = { t: type }:
           var expected = switch getExpectedType().reduce() {
             case TAbstract(_.get().module => 'coconut.data.Value', [_.toComplex() => e]): e;
             case v: throw 'assert: $v';
