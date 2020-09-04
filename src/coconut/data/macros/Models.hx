@@ -150,7 +150,7 @@ class Models {
         case TInst(_.get() => { pack: ['tink', 'state'], name: 'ObservableArray' | 'ObservableMap' }, params): checkMany(params);
         case TInst(_, params) | TAbstract(_, params)
           if (
-            Context.unify(t, Context.getType('tink.state.Observable.ObservableObject'))
+            Context.unify(t, Context.getType('tink.state.internal.ObservableObject'))
               ||
             Context.unify(t, Context.getType('coconut.data.Model'))
           ):

@@ -1,6 +1,6 @@
 package coconut.data;
 
-import tink.state.Observable;
+import tink.state.*;
 
 #if macro
 import haxe.macro.Context.*;
@@ -13,7 +13,7 @@ using tink.CoreApi;
 #end
 
 @:forward @:transitive
-abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from ObservableObject<T> from tink.state.State<T> {
+abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from tink.state.internal.ObservableObject<T> from State<T> {
 
   @:to inline function getValue():T
     return this.value;
@@ -88,7 +88,7 @@ abstract Value<T>(Observable<T>) from Observable<T> to Observable<T> from Observ
             case TAbstract(_.get().module => 'coconut.data.Value', [_.toComplex() => e]): e;
             case v: throw 'assert: $v';
           }
-          if (unify(type, getType('tink.state.Observable.ObservableObject'))) {
+          if (unify(type, getType('tink.state.internal.ObservableObject'))) {
             var found = typeof(macro @:pos(e.pos) {
               function get<T>(o:tink.state.Observable<T>) return o.value;
               get($e);
