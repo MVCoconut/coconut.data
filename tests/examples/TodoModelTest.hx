@@ -25,7 +25,7 @@ class TodoModelTest {
         cb(Failure(new Error('@:loaded is not lazy')));
         return;
       }
-      item.observables.similar.bind({ direct: true }, function (v) {
+      item.observables.similar.bind(function (v) {
         var e = expected.shift();
         if (!called)
           cb(Failure(new Error('@:loaded did not start loading')));
@@ -34,7 +34,7 @@ class TodoModelTest {
 
         if (expected.length == 0)
           cb(Success(Noise));
-      });
+      }, tink.state.Scheduler.direct);
     }).handle(function (o) {
       asserts.assert(o.isSuccess());
       asserts.done();
