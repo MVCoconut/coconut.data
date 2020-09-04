@@ -536,7 +536,7 @@ class ModelBuilder {
               }
 
             if (injected) init;
-            else macro @:pos(init.pos) new tink.state.State<$valueType>($init, ${config.comparator}, ${config.guard}, (id:Int) -> this.toString() + '.' + $v{f.name} + '(' + $i{state}.value + ')');
+            else macro @:pos(init.pos) new tink.state.State<$valueType>($init, ${config.comparator}, ${config.guard}, null #if tink_state.debug , (id:Int) -> this.toString() + '.' + $v{f.name} + '(' + $i{state}.value + ')' #end);
         }
       }
     );
