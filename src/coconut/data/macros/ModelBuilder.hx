@@ -257,14 +257,19 @@ class ModelBuilder {
     if (!isInterface) {
       c.addMembers(macro class {
         public final annex:coconut.data.helpers.Annex<$self>;
+        #if tink_state.debug
+          static var __id_counter = 0;
+          final __coco_id = __id_counter++;
+        #end
       });
-
+      #if tink_state.debug
       if (!c.hasMember('toString'))
         c.addMembers(macro class {
-          public function toString():String {
-            return $v{c.target.name};//TODO: consider adding fields
+          @:keep public function toString():String {
+            return $v{c.target.name} + '#' + __coco_id;//TODO: consider adding fields
           }
         });
+      #end
     }
   }
 
@@ -432,7 +437,7 @@ class ModelBuilder {
         field: f.name,
         expr: switch kind {
           case KConstant:
-            macro @:pos(f.pos) tink.state.Observable.const($i{name});
+            macro @:pos(f.pos) tink.state.Observable.const($i{name} #if tink_state.debug , () -> this.toString() + '.' + $v{f.name} + '(' + $i{name} + ')' #end);
           default:
             macro @:pos(f.pos) $i{state}
         }
@@ -517,7 +522,7 @@ class ModelBuilder {
               if (name != null) macro @:pos(e.pos) function ($name:tink.core.Option<$t>):$ret return $e;
               else macro @:pos(e.pos) function ():$ret return $e;
 
-            macro @:pos(e.pos) tink.state.Observable.auto($impl);
+            macro @:pos(e.pos) tink.state.Observable.auto($impl #if tink_state.debug , (_:Int) -> this.toString() + '.' + $v{f.name} #end);
           default:
 
             var init =
@@ -531,7 +536,7 @@ class ModelBuilder {
               }
 
             if (injected) init;
-            else macro @:pos(init.pos) new tink.state.State<$valueType>($init, ${config.comparator}, ${config.guard});
+            else macro @:pos(init.pos) new tink.state.State<$valueType>($init, ${config.comparator}, ${config.guard}, (id:Int) -> this.toString() + '.' + $v{f.name} + '(' + $i{state}.value + ')');
         }
       }
     );
