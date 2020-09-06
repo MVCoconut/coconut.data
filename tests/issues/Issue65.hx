@@ -12,7 +12,7 @@ using tink.state.Promised;
     var inner = outer.inner;
     asserts.assert(Outer.requests == 1);
 
-    Observable.auto(() -> outer.inner.id).bind({ direct: true }, function () {});
+    Observable.auto(() -> outer.inner.id).bind(function () {}, tink.state.Scheduler.direct);
 
     asserts.assert(Outer.requests == 1);
     asserts.assert(outer.inner.beep.match(Loading));

@@ -11,7 +11,7 @@ class Civ1 {
     p = { luxuryRate: 50 };
     p = { luxuryRate: 50, taxRate: 50 };
     var o:ObservablesOf<Rates> = rates.observables;
-    o.taxRate.bind({ direct: true }, function (t) asserts.assert(rates.taxRate == t));
+    o.taxRate.bind(function (t) asserts.assert(rates.taxRate == t), tink.state.Scheduler.direct);
     function checksum()
       asserts.assert(rates.taxRate + rates.luxuryRate + rates.scienceRate == 100);
 
