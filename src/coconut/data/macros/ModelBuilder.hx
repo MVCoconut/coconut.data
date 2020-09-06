@@ -262,14 +262,13 @@ class ModelBuilder {
           final __coco_id = __id_counter++;
         #end
       });
-      #if tink_state.debug
+
       if (!c.hasMember('toString'))
         c.addMembers(macro class {
-          @:keep public function toString():String {
-            return $v{c.target.name} + '#' + __coco_id;//TODO: consider adding fields
+          #if tink_state.debug @:keep #end public function toString():String {
+            return $v{c.target.name} #if tink_state.debug + '#' + __coco_id #end;//TODO: consider adding fields
           }
         });
-      #end
     }
   }
 
