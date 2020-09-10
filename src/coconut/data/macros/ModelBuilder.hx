@@ -9,7 +9,7 @@ using tink.MacroApi;
 using tink.CoreApi;
 using Lambda;
 
-@:enum abstract Kind(String) from String to String {
+enum abstract Kind(String) to String {
   var KObservable = ':observable';
   var KConstant = ':constant';
   var KEditable = ':editable';
@@ -498,30 +498,7 @@ class ModelBuilder {
         name: state,
         expr: switch kind {
           case KComputed | KLoaded:
-            switch e {
-              case null:
-                f.pos.error('`@$kind` must be initialized with an expression');
-              case macro @byDefault $v:
-                e.reject('`@byDefault` not allowed for `@$kind`');
-              default:
-            }
-
-            var name = null;
-            e = e.transform(function (e) return switch e.expr {
-              case EConst(CIdent("$last")):
-                if (name == null)
-                  name = MacroApi.tempName();
-                macro @:pos(e.pos) $i{name};
-              default: e;
-            });
-
-            var ret = if (kind == KLoaded) macro : tink.core.Promise<$t> else t;
-
-            var impl =
-              if (name != null) macro @:pos(e.pos) function ($name:tink.core.Option<$t>):$ret return $e;
-              else macro @:pos(e.pos) function ():$ret return $e;
-
-            macro @:pos(e.pos) tink.state.Observable.auto($impl #if tink_state.debug , (_:Int) -> this.toString() + '.' + $v{f.name} #end);
+            buildComputed(kind, f, info.params, e, t);
           default:
 
             var init =
@@ -539,6 +516,40 @@ class ModelBuilder {
         }
       }
     );
+  }
+
+  static public function buildComputed(kind:Kind, f:Member, metaParams:Array<Expr>, e:Expr, t:ComplexType) {
+    switch e {
+      case null:
+        f.pos.error('`@$kind` must be initialized with an expression');
+      case macro @byDefault $v:
+        e.reject('`@byDefault` not allowed for `@$kind`');
+      default:
+    }
+
+    var comparator = macro null;
+    for (e in metaParams)
+      switch e {
+        case macro comparator = $c: comparator = c;
+        default: e.reject('only comparator = <expr> allowed here');
+      }
+
+    var name = null;
+    e = e.transform(function (e) return switch e.expr {
+      case EConst(CIdent("$last")):
+        if (name == null)
+          name = MacroApi.tempName();
+        macro @:pos(e.pos) $i{name};
+      default: e;
+    });
+
+    var ret = if (kind == KLoaded) macro : tink.core.Promise<$t> else t;
+
+    var impl =
+      if (name != null) macro @:pos(e.pos) function ($name:tink.core.Option<$t>):$ret return $e;
+      else macro @:pos(e.pos) function ():$ret return $e;
+
+    return macro @:pos(e.pos) tink.state.Observable.auto($impl, $comparator #if tink_state.debug , (_:Int) -> this.toString() + '.' + $v{f.name} #end);
   }
 
   static var EMPTY = [];
@@ -567,7 +578,7 @@ class ModelBuilder {
             m.pos.error('`@${m.name}` conflicts with previously found `@$kind`');
 
           params = m.params;
-          kind = k;
+          kind = cast k;//TODO: given the above pattern it seems weird to have to cast here
 
         case v:
           if (!allowedOnFields[v])
