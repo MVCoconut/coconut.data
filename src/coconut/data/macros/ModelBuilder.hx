@@ -498,7 +498,8 @@ class ModelBuilder {
         name: state,
         expr: switch kind {
           case KComputed | KLoaded:
-            buildComputed(kind, f, info.params, e, t);
+            if (isInterface) macro null;
+            else buildComputed(kind, f, info.params, e, t);
           default:
 
             var init =
