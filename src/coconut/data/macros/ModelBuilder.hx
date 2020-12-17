@@ -327,12 +327,7 @@ class ModelBuilder {
           func.expr = macro @:pos(func.expr.pos)
             return
               __cocoupdate((function ():tink.core.Promise<$patchType> $body)())
-              .next(function (_) return $ret);
-
-          func.ret = {
-            var blank = func.expr.pos.makeBlankType();
-            macro : tink.core.Promise<$blank>;
-          }
+              .next(function (_) return tink.core.Promise.lift($ret));
         }
       case v: v[1].pos.error('Can only have one @$TRANSITION per function');
     }
