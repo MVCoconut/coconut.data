@@ -19,7 +19,7 @@ class Annex<Target:Model> {
   public macro function get(ethis:Expr, cls:Expr);
 }
 
-private abstract ClassKey({}) {
+private abstract ClassKey({}) to {} {
   @:from static function fromClass<T>(c:Class<T>):ClassKey
     return cast c;
 }
