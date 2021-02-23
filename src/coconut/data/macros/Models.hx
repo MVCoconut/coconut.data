@@ -56,14 +56,14 @@ class Models {
         default: throw 'assert';
       }
 
-  static function considerValid(pack:Array<String>, name:String)
+  static function considerValid(t:BaseType)
     return
-      switch pack.concat([name]).join('.') {
+      switch t.pack.concat([t.name]).join('.') {
         case  'Date' | 'Int' | 'String' | 'Bool' | 'Float' | 'Null': true;
         case 'tink.pure.List': true;
         case 'tink.Url': true;
         default:
-          switch [pack, name] {
+          switch [t.pack, t.name] {
             case [['tink', 'core'], 'NamedWith' | 'Pair' | 'Lazy' | 'TypedError' | 'Future' | 'Promise' | 'Signal' | 'SignalTrigger' | 'Callback']: true;
             default: false;
           };
@@ -72,8 +72,8 @@ class Models {
   static public inline var OBSERVABLE = ':observable';
   static public inline var SKIP_CHECK = ':skipCheck';
 
-  static function checkMany(params:Array<Type>)
-    return [for (p in params) for (s in check(p)) s];
+  static function checkParams(b:BaseType, params:Array<Type>)
+    return [for (i => p in params) if (b.params[i].t.match(TInst(_.get().meta.has(':skipCheck') => false, _)))for (s in check(p)) s];
 
   static var registered = false;
   static var delayedFieldChecks = new Map<String, Map<String, Bool>>();
@@ -129,6 +129,9 @@ class Models {
       });
     }
 
+  static function baseType<T:BaseType>(r:Ref<T>):BaseType
+    return r.get();
+
   static public function check(t:Type):Array<String>
     return
       switch t {
@@ -147,20 +150,19 @@ class Models {
         case TFun(_, _): [];
         case TAbstract(_.get().meta.has(':enum') => true, _): [];
         case TInst(_.get().kind => KTypeParameter(_), _): [];
-        case TInst(_.get() => { pack: ['tink', 'state'], name: 'ObservableArray' | 'ObservableMap' }, params): checkMany(params);
-        case TInst(_, params) | TAbstract(_, params)
+        case TInst(baseType(_) => b, params) | TAbstract(baseType(_) => b, params)
           if (
             Context.unify(t, Context.getType('tink.state.internal.ObservableObject'))
               ||
             Context.unify(t, Context.getType('coconut.data.Model'))
           ):
-            checkMany(params);
-        case TAbstract(_.get().meta => m, params)
-           | TType(_.get().meta => m, params)
-           | TEnum(_.get().meta => m, params)
-           | TInst(_.get().meta => m, params) if (m.has(':pure') || m.has(OBSERVABLE) || m.has(SKIP_CHECK)):
+            checkParams(b, params);
+        case TAbstract(baseType(_) => t = { meta: m }, params)
+           | TType(baseType(_) => t = { meta: m }, params)
+           | TEnum(baseType(_) => t = { meta: m }, params)
+           | TInst(baseType(_) => t = { meta: m }, params) if (m.has(':pure') || m.has(OBSERVABLE) || m.has(SKIP_CHECK)):
 
-          checkMany(params);
+          checkParams(t, params);
         case TEnum(_.get() => e, params):
 
           recurse(e.meta, () -> {
@@ -177,22 +179,23 @@ class Models {
             if (ret.length > 0)
               e.meta.remove(SKIP_CHECK);
 
-            ret.concat(checkMany(params));
+            ret.concat(checkParams(e, params));
           });
 
-        case TAbstract(_.get() => { pack: pack, name: name }, params)
-           | TInst(_.get() => { pack: pack, name: name }, params)
-             if (considerValid(pack, name)):
-          checkMany(params);
+        case TAbstract(baseType(_) => t, params)
+           | TInst(baseType(_) => t, params)
+             if (considerValid(t)):
+          checkParams(t, params);
         case TDynamic(null): [];//personally, I'm inclined to disallow this
         case TLazy(_):
           check(t.reduce(true));
-        case TType(_.get() => { pos: pos, meta: meta, name: name }, params), TAbstract(_.get() => { pos: pos, meta: meta, name: name }, params):
+        case TType(baseType(_) => b, params)
+           | TAbstract(baseType(_) => b, params):
           recurse(
-            meta,
+            b.meta,
             check.bind(followOnce(t)) //On @:coreType, following returns the type itself, which will then pass via the above @:skipCheck branch
           )
-            .concat(checkMany(params)).map(function (s)
+            .concat(checkParams(b, params)).map(function (s)
               return t.toString() + ' is not observable, because $s'
             );
         case TInst(_.get() => {kind: KExpr(_)}, _): // const type param
@@ -214,7 +217,7 @@ class Models {
 
             return ret;
           })
-            .concat(checkMany(params)).map(function (s)
+            .concat(checkParams(cls, params)).map(function (s)
               return t.toString() + ' is not observable, because $s'
             );
         case v:
