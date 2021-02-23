@@ -1,6 +1,17 @@
 {
 	"name": "coconut.data",
-	"license": "MIT",
+	"classPath": "src",
+	"dependencies": {
+		"tink_anon": "",
+		"tink_pure": "",
+		"tink_state": ""
+	},
+	"url": "https://github.com/MVCoconut/coconut.data/",
+	"contributors": [
+		"back2dos"
+	],
+	"version": "0.11.0",
+	"releasenote": "Support haxe 4.2. Various other improvements.",
 	"tags": [
 		"data",
 		"state",
@@ -9,16 +20,5 @@
 		"reactive",
 		"observable"
 	],
-	"classPath": "src",
-	"contributors": [
-		"back2dos"
-	],
-	"releasenote": "Fix Patch type and add alias to commonly used data structures",
-	"version": "0.10.1",
-	"url": "https://github.com/MVCoconut/coconut.data/",
-	"dependencies": {
-		"tink_state": "",
-		"tink_pure": "",
-		"tink_anon": ""
-	}
+	"license": "MIT"
 }
