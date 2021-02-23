@@ -17,6 +17,38 @@ enum abstract Kind(String) to String {
   var KShared = ':shared';
   var KComputed = ':computed';
   var KLoaded = ':loaded';
+
+  public var injected(get, never):Bool;
+    function get_injected()
+      return switch (cast this:Kind) {
+        case KExternal | KShared: true;
+        default: false;
+      }
+
+  public var settable(get, never):Bool;
+    function get_settable()
+      return switch (cast this:Kind) {
+        case KEditable | KShared: true;
+        default: false;
+      }
+
+  public var mutable(get, never):Bool;
+    function get_mutable()
+      return switch (cast this:Kind) {
+        case KObservable | KEditable: true;
+        default: false;
+      }
+
+  public var virtual(get, never):Bool;
+    function get_virtual()
+      return switch (cast this:Kind) {
+        case KComputed | KLoaded: true;
+        default: false;
+      }
+
+  public var initEarly(get, never):Bool;
+    function get_initEarly()
+      return virtual || injected;
 }
 
 class ModelBuilder {
@@ -352,10 +384,6 @@ class ModelBuilder {
     var name = f.name,
         kind = info.kind;
 
-    var injected = kind == KExternal || kind == KShared;
-    var settable = kind == KEditable || kind == KShared;
-    var mutable = kind == KObservable || kind == KEditable;
-
     var config = {
       comparator: macro null,
       guard: macro null
@@ -374,7 +402,7 @@ class ModelBuilder {
               option.reject('only `guard` and `comparator` allowed here');
           }
 
-          if (!mutable)
+          if (!kind.mutable)
             option.reject('not supported for `@:$kind` yet');
         default:
           e.reject("only expressions as <option> = <value> allowed here");
@@ -386,7 +414,7 @@ class ModelBuilder {
 
     f.kind = FProp(
       'get',
-      if (settable) 'set' else 'never',
+      if (kind.settable) 'set' else 'never',
       valueType
     );
 
@@ -423,7 +451,7 @@ class ModelBuilder {
 
     if (f.isPublic) {
       observableFields.push({
-        var exposed = if (settable) 'State' else 'Observable';
+        var exposed = if (kind.settable) 'State' else 'Observable';
         mk(macro : tink.state.$exposed<$valueType>);
       });
 
@@ -446,7 +474,7 @@ class ModelBuilder {
               macro @:pos(f.pos) $i{name};
             default:
               var type =
-                if (mutable || settable) macro : tink.state.State<$valueType>;
+                if (kind.mutable || kind.settable) macro : tink.state.State<$valueType>;
                 else macro : tink.state.Observable<$valueType>;
 
               c.addMembers(macro class {
@@ -463,7 +491,7 @@ class ModelBuilder {
 
     var owned = kind == KObservable || kind == KEditable;
 
-    if (settable) {
+    if (kind.settable) {
       var setter = 'set_$name';
       c.addMembers(macro class {
         @:noCompletion function $setter(param:$valueType):$valueType {
@@ -480,7 +508,7 @@ class ModelBuilder {
     if (owned)
       patchFields.push(mk(valueType, true));
 
-    init.push(
+    var i =
       if (kind == KConstant) {
         name: name,
         expr: switch e {
@@ -491,27 +519,26 @@ class ModelBuilder {
       }
       else {
         name: state,
-        expr: switch kind {
-          case KComputed | KLoaded:
+        expr:
+          if (kind.virtual)
             if (isInterface) macro null;
             else buildComputed(kind, f, info.params, e, t);
-          default:
-
+          else {
             var init =
               switch e {
                 case null: addArg();
                 case macro @byDefault $v: addArg(v);
                 default:
-                  if (injected)
+                  if (kind.injected)
                     e.reject('`@:$kind` fields cannot be initialized. Did you mean to use `@byDefault`?');
                   else e;
               }
 
-            if (injected) init;
+            if (kind.injected) init;
             else macro @:pos(init.pos) new tink.state.State<$valueType>($init, ${config.comparator}, ${config.guard}, null #if tink_state.debug , (id:Int) -> this.toString() + '.' + $v{f.name} + '(' + $i{state}.value + ')' #end);
-        }
+          }
       }
-    );
+    if (kind.initEarly) init.unshift(i); else init.push(i);
   }
 
   static public function buildComputed(kind:Kind, f:Member, metaParams:Array<Expr>, e:Expr, t:ComplexType) {
