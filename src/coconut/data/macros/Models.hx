@@ -163,22 +163,22 @@ class Models {
           checkMany(params);
         case TEnum(_.get() => e, params):
 
-          e.meta.add(SKIP_CHECK, [], e.pos);
+          recurse(e.meta, () -> {
+            var ret = [];
+            for (c in e.constructs)
+              switch c.type.reduce() {
+                case TFun(args, _):
+                  for (a in args)
+                    for (s in check(a.t))
+                      ret.push('Enum ${e.name} is not observable because $s for argument ${c.name}.${a.name}');
+                default:
+              }
 
-          var ret = [];
-          for (c in e.constructs)
-            switch c.type.reduce() {
-              case TFun(args, _):
-                for (a in args)
-                  for (s in check(a.t))
-                    ret.push('Enum ${e.name} is not observable because $s for argument ${c.name}.${a.name}');
-              default:
-            }
+            if (ret.length > 0)
+              e.meta.remove(SKIP_CHECK);
 
-          if (ret.length > 0)
-            e.meta.remove(SKIP_CHECK);
-
-          ret.concat(checkMany(params));
+            ret.concat(checkMany(params));
+          });
 
         case TAbstract(_.get() => { pack: pack, name: name }, params)
            | TInst(_.get() => { pack: pack, name: name }, params)
