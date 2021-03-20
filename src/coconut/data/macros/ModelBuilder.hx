@@ -491,7 +491,7 @@ class ModelBuilder {
 
     var owned = kind == KObservable || kind == KEditable;
 
-    if (kind.settable) {
+    if (kind.settable && !isInterface) {
       var setter = 'set_$name';
       c.addMembers(macro class {
         @:noCompletion function $setter(param:$valueType):$valueType {
@@ -595,8 +595,8 @@ class ModelBuilder {
 
         case k = KObservable | KConstant | KEditable | KExternal | KShared | KComputed | KLoaded:
 
-          if (isInterface && k != KLoaded)
-            m.pos.error('Directives other than `@:$KLoaded` not allowed on interface fields');
+          if (isInterface && k != KLoaded && k != KEditable)
+            m.pos.error('Directives other than `@:$KLoaded` and `@:$KEditable` not allowed on interface fields');
           if (kind != null)
             m.pos.error('`@${m.name}` conflicts with previously found `@$kind`');
 
