@@ -3,16 +3,16 @@
 	"classPath": "src",
 	"dependencies": {
 		"tink_anon": "",
+		"tink_priority": "",
 		"tink_pure": "",
-		"tink_state": "",
-		"tink_priority": ""
+		"tink_state": ""
 	},
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"contributors": [
 		"back2dos"
 	],
-	"version": "0.11.0",
-	"releasenote": "Support haxe 4.2. Various other improvements.",
+	"version": "0.12.0",
+	"releasenote": "@:skipCheck for type params. Add coconut.data.Vector. Support @:editable on interfaces.",
 	"tags": [
 		"data",
 		"state",
