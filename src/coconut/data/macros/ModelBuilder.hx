@@ -639,12 +639,22 @@ class ModelBuilder {
 
     var builder = new ClassBuilder(fields);
 
-    new ModelBuilder(builder, ctor);
+    for (pass in passes)
+      ctor = pass(builder, ctor);
     #if hotswap
       hotswap.Macro.lazify(builder);
     #end
 
     return builder.export(builder.target.meta.has(':explain'));
+  }
+
+  static public final passes = {
+    var queue = new tink.priority.Queue();
+    queue.whenever((builder, ctor) -> {
+      new ModelBuilder(builder, ctor);
+      ctor;
+    });
+    queue;
   }
 }
 #end

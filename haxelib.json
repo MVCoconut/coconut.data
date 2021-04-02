@@ -4,7 +4,8 @@
 	"dependencies": {
 		"tink_anon": "",
 		"tink_pure": "",
-		"tink_state": ""
+		"tink_state": "",
+		"tink_priority": ""
 	},
 	"url": "https://github.com/MVCoconut/coconut.data/",
 	"contributors": [
