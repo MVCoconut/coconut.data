@@ -20,7 +20,7 @@ class Annex<Target:Model> {
     function getPath(e:Expr) return switch e {
       case macro $i{name}: name;
       case macro ${getPath(_) => p}.$name: '$p.$name';
-      case { expr: EDisplay(_) | EDisplayNew(_) }:
+      case { expr: EDisplay(_) #if (haxe_ver <= 4.201) | EDisplayNew(_) #end }:
         ret = e;
         '';
       default: e.reject('should be a dot-path');
