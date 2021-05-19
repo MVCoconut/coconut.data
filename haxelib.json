@@ -11,8 +11,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"version": "0.12.0",
-	"releasenote": "@:skipCheck for type params. Add coconut.data.Vector. Support @:editable on interfaces.",
+	"version": "0.12.1",
+	"releasenote": "Support haxe 4.2.2 and above",
 	"tags": [
 		"data",
 		"state",
