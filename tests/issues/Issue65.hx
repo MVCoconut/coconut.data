@@ -38,7 +38,7 @@ class Outer implements Model {
     var ret = new FutureTrigger<Noise>();
     requests++;
     queue.push(ret);
-    return ret;
+    return ret.asFuture();
   }
   static public function advance()
     return switch queue.shift() {
