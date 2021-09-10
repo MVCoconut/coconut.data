@@ -459,7 +459,7 @@ class ModelBuilder {
         field: f.name,
         expr: switch kind {
           case KConstant:
-            macro @:pos(f.pos) tink.state.Observable.const($i{name} #if tink_state.debug , () -> this.toString() + '.' + $v{f.name} + '(' + $i{name} + ')' #end);
+            macro @:pos(f.pos) tink.state.Observable.const(this.$name #if tink_state.debug , () -> this.toString() + '.' + $v{f.name} + '(' + this.$name + ')' #end);
           default:
             macro @:pos(f.pos) $i{state}
         }
