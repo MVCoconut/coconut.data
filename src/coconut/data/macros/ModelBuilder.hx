@@ -535,7 +535,22 @@ class ModelBuilder {
               }
 
             if (kind.injected) init;
-            else macro @:pos(init.pos) new tink.state.State<$valueType>($init, ${config.comparator}, ${config.guard}, null #if tink_state.debug , (id:Int) -> this.toString() + '.' + $v{f.name} + '(' + $i{state}.value + ')' #end);
+            else {
+              var args = [
+                init, config.comparator, config.guard,
+                #if tink_state.debug macro null, (id:Int) -> this.toString() + '.' + $v{f.name} + '(' + $i{state}.value + ')' #end
+              ];
+              #if !tink_state.debug
+                {
+                  var l = args.length;
+                  while (l --> 1) switch args[l] {
+                    case macro null: args.pop();
+                    default: break;
+                  }
+                }
+              #end
+              macro @:pos(init.pos) new tink.state.State<$valueType>($a{args});
+            }
           }
       }
     if (kind.initEarly) init.unshift(i); else init.push(i);
