@@ -392,8 +392,8 @@ class ModelBuilder {
     for (e in info.params)
       switch e {
         case macro $option = $v:
-
-          switch option.getIdent().sure() {
+          var id = option.getIdent().sure();
+          switch id {
             case 'guard':
               config.guard = macro @:pos(v.pos) function (param):$t return $v;
             case 'comparator':
@@ -402,8 +402,8 @@ class ModelBuilder {
               option.reject('only `guard` and `comparator` allowed here');
           }
 
-          if (!kind.mutable)
-            option.reject('not supported for `@:$kind` yet');
+          if (!(kind.mutable || (id == 'comparator' && kind == KComputed)))
+            option.reject('not supported for `@$kind` yet');
         default:
           e.reject("only expressions as <option> = <value> allowed here");
       }
