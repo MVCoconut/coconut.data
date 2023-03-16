@@ -53,28 +53,31 @@ enum abstract Kind(String) to String {
 
 class ModelBuilder {
 
-  var c:ClassBuilder;
-  var className:String;
-  var isInterface:Bool;
+  final c:ClassBuilder;
+  final className:String;
+  final isInterface:Bool;
+  final triggersUpdates:Bool;
 
-  var argFields:Array<Field> = [];
+  final argFields:Array<Field> = [];
   var argsOptional:Bool = true;
-  var patchFields:Array<Field> = [];
-  var observableFields:Array<Field> = [];
-  var observableInit:Array<ObjectField> = [];
-  var init:Array<{ name:String, expr: Expr }> = [];
+  final patchFields:Array<Field> = [];
+  final observableFields:Array<Field> = [];
+  final observableInit:Array<ObjectField> = [];
+  final init:Array<{ name:String, expr: Expr }> = [];
 
-  var patchType:ComplexType;
+  final patchType:ComplexType;
 
   static final OPTIONAL = [{ name: ':optional', pos: (macro null).pos, params: [] }];
   static final NOMETA = OPTIONAL.slice(OPTIONAL.length);
   static inline var TRANSITION = ':transition';
+  static inline var TRIGGER_UPDATES = ':triggerUpdates';
 
   public function new(c, ctor) {
     //TODO: put `observables` into a class if `!isInterface`
     this.c = c;
     this.className = Models.classId(c.target);
     this.isInterface = c.target.isInterface;
+    this.triggersUpdates = c.target.meta.has(TRIGGER_UPDATES);
 
     switch c.target.superClass {
       case null:
@@ -228,6 +231,9 @@ class ModelBuilder {
       updates.push(macro if (existent.$name) $i{stateOf(name)}.set(delta.$name));
     }
 
+    if (triggersUpdates)
+      updates.push(macro this._updatePerformed.trigger(delta));
+
     observableFields.push({
       name: 'isInTransition',
       pos: (macro null).pos,
@@ -263,7 +269,6 @@ class ModelBuilder {
               var delta:$delta = delta;
               var existent = tink.Anon.existentFields(delta);
               $b{updates};
-              this._updatePerformed.trigger(delta);
             case Failure(e): errorTrigger.trigger(e);
           }
         });
@@ -271,9 +276,6 @@ class ModelBuilder {
         if(!sync) __coco_transitionCount.set(__coco_transitionCount.value + 1);
         return ret;
       }
-      var _updatePerformed:tink.core.Signal.SignalTrigger<$patchType> = tink.core.Signal.trigger();
-      public var updatePerformed(get, never):tink.core.Signal<$patchType>;
-        function get_updatePerformed() return _updatePerformed;
       public final observables:$observables;
       public final transitionErrors:tink.core.Signal<tink.core.Error>;
       @:noCompletion final errorTrigger:tink.core.Signal.SignalTrigger<tink.core.Error>;
@@ -281,6 +283,19 @@ class ModelBuilder {
       public var isInTransition(get, never):Bool;
       @:noCompletion inline function get_isInTransition() return __coco_transitionCount.value > 0;
     }).fields;
+
+    if (!isInterface)
+      fields = fields.concat((
+        if (triggersUpdates) macro class {
+          var _updatePerformed:tink.core.Signal.SignalTrigger<$patchType> = tink.core.Signal.trigger();
+          public var updatePerformed(get, never):tink.core.Signal<$patchType>;
+            function get_updatePerformed() return _updatePerformed;
+        }
+        else macro class {
+          @:require(false, $v{'Add @$TRIGGER_UPDATES to generate the updatePerformed signal on $className'})
+          public var updatePerformed(default, never):tink.core.Signal<$patchType>;
+        }
+      ).fields);
 
     for (f in fields)
       if (f.isPublic || !isInterface)
@@ -496,7 +511,7 @@ class ModelBuilder {
       c.addMembers(macro class {
         @:noCompletion function $setter(param:$valueType):$valueType {
           ${
-            if (owned) macro _updatePerformed.trigger({ $name: param })
+            if (owned && triggersUpdates) macro _updatePerformed.trigger({ $name: param })
             else macro {}
           }
           $i{state}.set(param);
