@@ -572,7 +572,9 @@ class ModelBuilder {
       if (name != null) macro @:pos(e.pos) function ($name:tink.core.Option<$t>):$ret return $e;
       else macro @:pos(e.pos) function ():$ret return $e;
 
-    return macro @:pos(e.pos) tink.state.Observable.auto($impl, $comparator #if tink_state.debug , (_:Int) -> this.toString() + '.' + $v{f.name} #end);
+    var ret = if (kind == KLoaded) macro : tink.state.Promised<$t> else t;
+
+    return macro @:pos(e.pos) new tink.state.internal.AutoObservable<$ret>($impl, $comparator #if tink_state.debug , (_:Int) -> this.toString() + '.' + $v{f.name} #end);
   }
 
   static var EMPTY = [];
