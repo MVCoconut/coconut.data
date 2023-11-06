@@ -264,7 +264,7 @@ class ModelBuilder {
               var existent = tink.Anon.existentFields(delta);
               tink.state.Scheduler.atomically(() -> {
                 $b{updates};
-              });
+              }, true);
               this._updatePerformed.trigger(delta);
             case Failure(e): errorTrigger.trigger(e);
           }
