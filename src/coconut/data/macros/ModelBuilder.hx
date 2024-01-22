@@ -623,7 +623,17 @@ class ModelBuilder {
     }
   }
 
+  static final processed = new Map();
   static public function build() {
+
+    var target = Context.getLocalClass().get();
+
+    var className = Models.classId(target);
+
+    if (processed[className]) return null;
+
+    processed[className] = true;
+
     var fields = Context.getBuildFields();
 
     var ctor = {
@@ -641,7 +651,7 @@ class ModelBuilder {
       res;
     }
 
-    var builder = new ClassBuilder(fields);
+    var builder = new ClassBuilder(target, fields);
 
     for (pass in passes)
       ctor = pass(builder, ctor);
