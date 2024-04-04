@@ -214,7 +214,7 @@ class ModelBuilder {
 
     if (afterInit.length > 0)
       constr.addStatement(macro tink.state.Observable.untracked(function () {
-        $b{afterInit};
+        (function () $b{afterInit})();
         return null;
       }));
   }

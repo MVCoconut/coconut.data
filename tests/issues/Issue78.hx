@@ -4,7 +4,6 @@ package issues;
 class Issue78 {
   public function new() {}
   
-  @:include
   public function test() {
     var m = new Issue78Model(42);
     asserts.assert(m.foo == 43);
@@ -19,6 +18,6 @@ class Issue78Model implements Model {
   @:computed var bar:Int = foo + 1;
   
   public function new(foo:Int) {
-        this = { foo: foo + 1 }
-    }
+    this = { foo: foo + 1 }
+  }
 }
