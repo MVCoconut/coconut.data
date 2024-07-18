@@ -591,7 +591,7 @@ class ModelBuilder {
     e = e.transform(function (e) return switch e.expr {
       case EConst(CIdent("$last")):
         if (name == null)
-          name = MacroApi.tempName();
+          name = '__cocoLast__';
         macro @:pos(e.pos) $i{name};
       default: e;
     });
