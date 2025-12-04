@@ -95,6 +95,7 @@ class ModelBuilder {
           case FProp(_, _, _, _):
             f.pos.error('Custom properties may only use `get`, `set` and `never` access.');
           case FVar(t, e) if (!f.meta.exists(function (m) return m.name == ':signal' || m.name == ':untracked')):
+            f.isFinal = false;
             addField(f, t, e);
           default:
         }
